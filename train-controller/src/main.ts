@@ -12,6 +12,8 @@ import Divider from "primevue/divider";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import MapComponent from "./components/MapComponent.vue";
+import Dialog from "primevue/dialog";
+import Dropdown from "primevue/dropdown";
 
 createApp(App)
     .use(PrimeVue)
@@ -24,4 +26,6 @@ createApp(App)
     .component("DataTable", DataTable)
     .component("Column", Column)
     .component("MapComponent", MapComponent)
+    .component("Dialog", Dialog)
+    .component("Dropdown", Dropdown)
     .mount("#app");
