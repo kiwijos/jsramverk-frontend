@@ -8,7 +8,6 @@ const tickets = ref<Ticket[]>([]);
 onMounted(async () => {
     tickets.value = await TrainService.getTickets();
 });
-
 </script>
 
 <template>
