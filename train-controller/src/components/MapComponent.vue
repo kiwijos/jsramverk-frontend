@@ -6,49 +6,42 @@
 
 <script lang="ts">
 import type { Train } from "@/models/Train.model";
-import { Map, Marker, NavigationControl, Popup } from "maplibre-gl";
+import * as Libre from "maplibre-gl";
 import { shallowRef, onMounted, onUnmounted, markRaw, type Raw, type PropType, ref } from "vue";
 import { io } from "socket.io-client";
 import { stringifyQuery } from "vue-router";
-
-interface TrainMarker {
-    trainnumber: string;
-    marker: Marker;
-}
-
-const trainMarkers = ref<TrainMarker[]>([]);
+const trainMarkers = ref(new Map<string, Libre.Marker>());
 
 export default {
     name: "MapComponent",
-    props: ["markers"],
-    setup(props) {
+    setup() {
         const mapContainer = shallowRef<string | HTMLElement | null>(null);
-        const map = shallowRef<Raw<Map> | null>(null);
+        const map = shallowRef<Raw<Libre.Map> | null>(null);
         onMounted(() => {
             const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
 
             const initialState = { lng: 15.704, lat: 58.553, zoom: 5 };
 
             map.value = markRaw(
-                new Map({
+                new Libre.Map({
                     container: mapContainer.value as HTMLElement | string,
                     style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}`,
                     center: [initialState.lng, initialState.lat],
                     zoom: initialState.zoom
                 })
             );
-            const socket = io("http://192.168.50.76:1337");
+            const socket = io(import.meta.env.VITE_API_URL);
 
             socket.on("message", (data: Train) => {
                 // add and update train markers
-                const train = trainMarkers.value.find((t) => t.trainnumber === data.trainnumber);
+                const train = trainMarkers.value.get(data.trainnumber);
                 if (train) {
-                    train.marker.setLngLat([data.position[1], data.position[0]]);
+                    train.setLngLat([data.position[1], data.position[0]]);
                 } else {
-                    const marker = new Marker({ color: "red" })
+                    const marker = new Libre.Marker({ color: "red" })
                         .setLngLat(data.position)
                         .setPopup(
-                            new Popup({ offset: 25 }) // add popups
+                            new Libre.Popup({ offset: 25 }) // add popups
                                 .setHTML(
                                     `
                                     <h3>Tåg: ${data.trainnumber}</h3>
@@ -59,8 +52,8 @@ export default {
                                     `
                                 )
                         )
-                        .addTo(map.value as Map);
-                    trainMarkers.value.push({ trainnumber: data.trainnumber, marker: marker });
+                        .addTo(map.value as Libre.Map);
+                    trainMarkers.value.set(data.trainnumber, marker);
                 }
             });
         });
