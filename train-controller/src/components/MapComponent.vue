@@ -37,7 +37,7 @@ export default {
                     zoom: initialState.zoom
                 })
             );
-            const socket = io("http://192.168.50.76:1337");
+            const socket = io(import.meta.env.VITE_API_URL);
 
             socket.on("message", (data: Train) => {
                 // add and update train markers
