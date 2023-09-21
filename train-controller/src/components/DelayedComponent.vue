@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import axios from "axios";
 import type { TrainDelay } from "@/models/TrainDelay.model";
+import TrainService from "@/services/TrainService";
+import type { TicketCode } from "@/models/TicketCode.model";
 
 const delayedTrains = ref<TrainDelay[]>([]);
+const dialogVisible = ref<boolean>(false);
+const dialogData = ref<TrainDelay | null>(null);
+
+const ticketCodes = ref<TicketCode[]>([]);
+const selectedTicketCode = ref<TicketCode | null>(null);
 
 onMounted(async () => {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/delayed`);
-    delayedTrains.value = response.data.data;
+    delayedTrains.value = await TrainService.getDelayedTrains();
+    ticketCodes.value = await TrainService.getTicketCodes();
 });
 </script>
 
@@ -47,8 +53,36 @@ onMounted(async () => {
                     </span>
                 </template>
             </Column>
+            <Column>
+                <template #body="{ data }">
+                    <Button
+                        label=""
+                        icon="pi pi-plus"
+                        class="p-button-rounded p-button-success p-button-sm"
+                        @click="() => {
+                            dialogVisible = true;
+                            dialogData = data;
+                        }"
+                    />
+                </template>
+            </Column>
         </DataTable>
         <!-- leaflet map-->
         <MapComponent class="w-7" />
     </div>
+    <Dialog v-model:visible="dialogVisible" class="w-7 h-22rem">
+        <div class="flex gap-3 align-content-center align-items-center">
+            <h2 class="p-0">Nytt ärende</h2>
+            <h3 class="p-0">Tågnummer: {{ dialogData?.OperationalTrainNumber }}</h3>
+        </div>
+        <Divider />
+        <div class="flex gap-3">
+            <div class="w-5">
+                <h3>Orsakskod</h3>
+                <Dropdown v-model:modelValue="selectedTicketCode" :options="ticketCodes">
+                    
+                </Dropdown>
+            </div>
+        </div>
+    </Dialog>
 </template>
