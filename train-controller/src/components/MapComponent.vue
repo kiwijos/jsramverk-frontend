@@ -30,8 +30,19 @@ export default {
                     zoom: initialState.zoom
                 })
             );
-            const socket = io(import.meta.env.VITE_API_URL);
+            openSocket();
+        });
+        onUnmounted(() => {
+            map.value?.remove();
+        });
 
+        return {
+            map,
+            mapContainer
+        };
+
+        function openSocket() {
+            const socket = io(import.meta.env.VITE_API_URL);
             socket.on("message", (data: Train) => {
                 // add and update train markers
                 const train = trainMarkers.value.get(data.trainnumber);
@@ -56,15 +67,7 @@ export default {
                     trainMarkers.value.set(data.trainnumber, marker);
                 }
             });
-        });
-        onUnmounted(() => {
-            map.value?.remove();
-        });
-
-        return {
-            map,
-            mapContainer
-        };
+        }
     }
 };
 </script>
