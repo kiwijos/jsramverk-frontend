@@ -20,7 +20,7 @@ const items = ref([
     {
         label: "Ärenden",
         icon: "pi pi-fw pi-ticket",
-        route: "/delayed"
+        route: "/tickets"
     }
 ]);
 

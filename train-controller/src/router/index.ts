@@ -23,7 +23,13 @@ const routes = [
                 name: "Delayed",
                 component: () =>
                     import(/* webpackChunkName: "delayed" */ "../components/DelayedComponent.vue")
-            }
+            },
+            {
+                // Ticket page
+                path: "tickets",
+                name: "Tickets",
+                component: () => import(/* webpackChunkName: "ticket" */ "../components/TicketComponent.vue")
+            },
         ]
     },
     {
