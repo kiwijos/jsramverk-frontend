@@ -89,7 +89,6 @@ onMounted(async () => {
                         <template #option="{ option }">
                             <span>{{ option.Code }} - {{ option.Level1Description }}</span>
                         </template>
-                        <!--selected item-->
                         <template #value="{ value }">
                             <span>{{ value.Code }} - {{ value.Level1Description }}</span>
                         </template>
