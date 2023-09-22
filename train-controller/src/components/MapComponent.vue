@@ -50,7 +50,7 @@ export default {
                     train.setLngLat([data.position[1], data.position[0]]);
                 } else {
                     const marker = new Libre.Marker({ color: "red" })
-                        .setLngLat(data.position)
+                        .setLngLat([data.position[1], data.position[0]])
                         .setPopup(
                             new Libre.Popup({ offset: 25 }) // add popups
                                 .setHTML(
