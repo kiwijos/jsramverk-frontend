@@ -61,8 +61,8 @@ onMounted(async () => {
                         class="p-button-rounded p-button-success p-button-sm"
                         @click="
                             () => {
-                                dialogVisible = true;
                                 dialogData = data;
+                                dialogVisible = true;
                             }
                         "
                     />
@@ -76,7 +76,7 @@ onMounted(async () => {
         <div class="h-22rem">
             <h2 class="p-0">Registrera nytt ärende</h2>
             <Divider />
-            <div class="flex flex-column gap-3 align-items-center">
+            <div class="flex flex-column gap-3 align-items-center" v-if="dialogData">
                 <h3 class="p-0">Tågnummer: {{ dialogData?.OperationalTrainNumber }}</h3>
                 <div class="w-5 flex flex-column gap-3">
                     <h3>Orsakskod</h3>
@@ -87,10 +87,11 @@ onMounted(async () => {
                         placeholder="Välj orsak"
                     >
                         <template #option="{ option }">
-                            <span>{{ option.Code }} - {{ option.Level1Description }}</span>
+                            <span>{{ option?.Code }} - {{ option?.Level1Description }}</span>
                         </template>
                         <template #value="{ value }">
-                            <span>{{ value.Code }} - {{ value.Level1Description }}</span>
+                            <span v-if="value">{{ value?.Code }} - {{ value?.Level1Description }}</span>
+                            <span v-else>Välj orsak</span>
                         </template>
                     </Dropdown>
                     <Button
