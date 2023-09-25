@@ -1,4 +1,4 @@
-import { TrainLocation } from "./TrainLocation.model";
+import type { TrainLocation } from "./TrainLocation.model";
 export interface TrainDelay {
     ActivityId: string;
     ActivityType: string;
