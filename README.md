@@ -1,9 +1,46 @@
-## Description
-This is the frontend part of our web application. Here we will focus on the choices made, challenges encountered and solutions implemented in the frontend only. To get the full picture of our work in this course, please have a look in the repository of the backend part of our application.
+# train-controller
 
-## Getting the application to run
-### Fixing vulnerabilities
-Before running the npm audit tool we had to create a lockfile and npm package. When running the audit tool, no vulnerabilities were found. Which came as no surprise as the application was not depending on any external modules. For more information about vulnerabilities, please see the README in the repository of the backend part of our application.
+This template should help get you started developing with Vue 3 in Vite.
 
-## Frontend framework
-We chose Vue as our frontend JavaScript framework. It's a well-established framework that boasts both a gentle learning curve and impressive performance. We are a team of two people, one with no previous experience of working with any JavaScript framework who's looking for something approachable. The other has all the more experience and sees Vue as a relevant technology in the industry, although, he's never used it himself. With this choice of framework, we hope to bridge the gap between our differing experience levels and collaborate smoothly while also acquiring a skill that is in demand.
+## Recommended IDE Setup
+
+[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+
+## Type Support for `.vue` Imports in TS
+
+TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
+
+If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
+
+1. Disable the built-in TypeScript Extension
+    1) Run `Extensions: Show Built-in Extensions` from VSCode's command palette
+    2) Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
+2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
+
+## Customize configuration
+
+See [Vite Configuration Reference](https://vitejs.dev/config/).
+
+## Project Setup
+
+```sh
+npm install
+```
+
+### Compile and Hot-Reload for Development
+
+```sh
+npm run dev
+```
+
+### Type-Check, Compile and Minify for Production
+
+```sh
+npm run build
+```
+
+### Lint with [ESLint](https://eslint.org/)
+
+```sh
+npm run lint
+```
