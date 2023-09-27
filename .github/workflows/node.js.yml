@@ -3,6 +3,9 @@
 
 name: Node.js CI
 
+env:
+    VITE_API_URL: https://jsramverk-editor-allq22.azurewebsites.net
+
 on:
     push:
         branches: ["master"]
