@@ -1,6 +1,6 @@
-import { Ticket } from "./../models/Ticket.model";
-import { TrainDelay } from "./../models/TrainDelay.model";
-import { TicketCode } from "./../models/TicketCode.model";
+import type { Ticket } from "./../models/Ticket.model";
+import type { TrainDelay } from "./../models/TrainDelay.model";
+import type { TicketCode } from "./../models/TicketCode.model";
 // Test calls to api using TrainService
 
 import TrainService from "../services/TrainService";
