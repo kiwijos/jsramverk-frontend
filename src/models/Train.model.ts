@@ -2,7 +2,7 @@ export interface Train {
     trainnumber: string;
     position: [number, number];
     timestamp: Date;
-    baering: number;
+    bearing: number;
     status: boolean;
     speed: number;
 }
