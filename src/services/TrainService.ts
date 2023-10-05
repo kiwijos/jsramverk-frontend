@@ -6,7 +6,11 @@ import axios from "axios";
 
 export default {
     async getDelayedTrains(): Promise<TrainDelay[]> {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/delayed`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/delayed`, {
+            headers: {
+                "x-access-token": sessionStorage.getItem("x-access-token")
+            }
+        });
         return response.data.data;
     },
     async getTickets(): Promise<Ticket[]> {
@@ -30,7 +34,11 @@ export default {
         return response.data.data.tickets;
     },
     async getTicketCodes(): Promise<TicketCode[]> {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/codes`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/codes`, {
+            headers: {
+                "x-access-token": sessionStorage.getItem("x-access-token")
+            }
+        });
         return response.data.data;
     },
     async createTicket(request: TicketCreateDto): Promise<Ticket> {

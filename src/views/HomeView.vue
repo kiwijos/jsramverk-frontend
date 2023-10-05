@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AuthService from "@/services/AuthService";
 import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 
@@ -7,11 +8,6 @@ const route = useRoute();
 
 const active = ref(0);
 const items = ref([
-    {
-        label: "Hem",
-        icon: "pi pi-fw pi-home",
-        route: "/"
-    },
     {
         label: "Försenade tåg",
         icon: "pi pi-fw pi-stopwatch",
@@ -37,10 +33,19 @@ watch(
     },
     { immediate: true }
 );
+
+function logout() {
+    AuthService.logout();
+    router.push("/user/login");
+}
 </script>
 
 <template>
     <div class="w-full">
+        <div class="flex p-3">
+            <h1>Header/logo?</h1>
+            <Button label="Logga ut" @click="logout" />
+        </div>
         <div class="flex justify-content-between align-items-center">
             <nav class="w-full">
                 <TabMenu v-model:activeIndex="active" :model="items">

@@ -14,6 +14,7 @@ import Column from "primevue/column";
 import MapComponent from "./components/MapComponent.vue";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
+import Card from "primevue/card";
 
 createApp(App)
     .use(PrimeVue)
@@ -28,4 +29,5 @@ createApp(App)
     .component("MapComponent", MapComponent)
     .component("Dialog", Dialog)
     .component("Dropdown", Dropdown)
+    .component("Card", Card)
     .mount("#app");

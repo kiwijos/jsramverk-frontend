@@ -11,7 +11,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <h1>Ärenden</h1>
+    <h1 class="pt-3 px-3">Ärenden</h1>
     <Divider />
     <div class="flex gap-3">
         <DataTable
