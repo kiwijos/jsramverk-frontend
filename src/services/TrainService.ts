@@ -68,6 +68,6 @@ export default {
             data: graphqlQuery
         });
 
-        return response.data.data;
+        return response.data.data.createTicket.data;
     }
 };
