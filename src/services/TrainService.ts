@@ -12,6 +12,7 @@ export default {
     async getTickets(): Promise<Ticket[]> {
         const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
 
+        // Retrieve all tickets with all fields included
         const graphqlQuery = {
             query: `query GetAllTickets {
                 tickets { 
