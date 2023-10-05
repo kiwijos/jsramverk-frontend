@@ -14,12 +14,24 @@ export default {
         return response.data.data;
     },
     async getTickets(): Promise<Ticket[]> {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/tickets`, {
-            headers: {
-                "x-access-token": sessionStorage.getItem("x-access-token")
-            }
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+
+        // Retrieve all tickets with all fields included
+        const graphqlQuery = {
+            query: `query GetAllTickets {
+                tickets { 
+                    id code trainnumber traindate
+                }
+            }`
+        };
+
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery
         });
-        return response.data.data;
+
+        return response.data.data.tickets;
     },
     async getTicketCodes(): Promise<TicketCode[]> {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/codes`, {
@@ -30,11 +42,40 @@ export default {
         return response.data.data;
     },
     async createTicket(request: TicketCreateDto): Promise<Ticket> {
-        const response = await axios.post(`${import.meta.env.VITE_API_URL}/tickets`, request, {
-            headers: {
-                "x-access-token": sessionStorage.getItem("x-access-token")
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+
+        const graphqlQuery = {
+            query: `mutation (
+                $code: String!,
+                $trainnumber: String!,
+                $traindate: String!
+                ) {
+                createTicket (
+                    code: $code,
+                    trainnumber: $trainnumber,
+                    traindate: $traindate
+                    ) { 
+                        ok error data {
+                            id
+                            code
+                            trainnumber
+                            traindate
+                        }
+                }
+            }`,
+            variables: {
+                code: request.code,
+                trainnumber: request.trainnumber,
+                traindate: request.traindate
             }
+        };
+
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery
         });
-        return response.data.data;
+
+        return response.data.data.createTicket.data;
     }
 };
