@@ -49,6 +49,9 @@ export default {
                     ) { 
                         ok error data {
                             id
+                            code
+                            trainnumber
+                            traindate
                         }
                 }
             }`,
