@@ -2,6 +2,7 @@ import type { Ticket } from "@/models/Ticket.model";
 import type { TicketCode } from "@/models/TicketCode.model";
 import type { TrainDelay } from "@/models/TrainDelay.model";
 import type { TicketCreateDto } from "@/models/TicketCreateDto.model";
+import type { TicketUpdateDto } from "@/models/TicketUpdateDto.model";
 import axios from "axios";
 
 export default {
@@ -16,9 +17,8 @@ export default {
     async getTickets(): Promise<Ticket[]> {
         const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
 
-        // Retrieve all tickets with all fields included
         const graphqlQuery = {
-            query: `query GetAllTickets {
+            query: `query {
                 tickets { 
                     id code trainnumber traindate
                 }
@@ -32,6 +32,28 @@ export default {
         });
 
         return response.data.data.tickets;
+    },
+    async getTicketById(request: { id: string }): Promise<Ticket[]> {
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+
+        const graphqlQuery = {
+            query: `query (
+                $id: ID!
+                ){
+                ticket (id: $id) { 
+                    id code trainnumber traindate
+                }
+            }`,
+            variables: { id: request.id }
+        };
+
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery
+        });
+
+        return response.data.data.ticket;
     },
     async getTicketCodes(): Promise<TicketCode[]> {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/codes`, {
@@ -77,5 +99,74 @@ export default {
         });
 
         return response.data.data.createTicket.data;
+    },
+    async updateTicket(request: TicketUpdateDto): Promise<Ticket> {
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+
+        const graphqlQuery = {
+            query: `mutation (
+                $id: ID!,
+                $code: String,
+                $trainnumber: String,
+                $traindate: String
+                ) {
+                updateTicket (
+                    id: $id,
+                    code: $code,
+                    trainnumber: $trainnumber,
+                    traindate: $traindate
+                    ) { 
+                        ok error data {
+                            id
+                            code
+                            trainnumber
+                            traindate
+                        }
+                }
+            }`,
+            variables: {
+                id: request.id,
+                code: request.code,
+                trainnumber: request.trainnumber,
+                traindate: request.traindate
+            }
+        };
+
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery
+        });
+
+        return response.data.data.updateTicket.data;
+    },
+    async deleteTicket(request: { id: string }): Promise<Ticket> {
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+
+        const graphqlQuery = {
+            query: `mutation (
+                $id: ID!,
+                ) {
+                deleteTicket (
+                    id: $id,
+                    ) { 
+                        ok error data {
+                            id
+                            code
+                            trainnumber
+                            traindate
+                        }
+                }
+            }`,
+            variables: { id: request.id }
+        };
+
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery
+        });
+
+        return response.data.data.deleteTicket.data;
     }
 };
