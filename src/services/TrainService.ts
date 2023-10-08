@@ -3,6 +3,7 @@ import type { TicketCode } from "@/models/TicketCode.model";
 import type { TrainDelay } from "@/models/TrainDelay.model";
 import type { TicketCreateDto } from "@/models/TicketCreateDto.model";
 import type { TicketUpdateDto } from "@/models/TicketUpdateDto.model";
+import type { TicketResponse } from "@/models/TicketResponse.model";
 import axios from "axios";
 
 export default {
@@ -100,7 +101,7 @@ export default {
 
         return response.data.data.createTicket.data;
     },
-    async updateTicket(request: TicketUpdateDto): Promise<Ticket> {
+    async updateTicket(request: TicketUpdateDto): Promise<TicketResponse> {
         const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
 
         const graphqlQuery = {
@@ -138,9 +139,9 @@ export default {
             data: graphqlQuery
         });
 
-        return response.data.data.updateTicket.data;
+        return response.data.data.updateTicket;
     },
-    async deleteTicket(request: { id: string }): Promise<Ticket> {
+    async deleteTicket(request: { id: string }): Promise<TicketResponse> {
         const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
 
         const graphqlQuery = {
@@ -167,6 +168,6 @@ export default {
             data: graphqlQuery
         });
 
-        return response.data.data.deleteTicket.data;
+        return response.data.data.deleteTicket;
     }
 };
