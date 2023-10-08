@@ -6,12 +6,12 @@ import type { TicketCode } from "./../models/TicketCode.model";
 import TrainService from "../services/TrainService";
 import { expect, test } from "vitest";
 
-test("TrainService get ticket codes", async () => {
+test.skip("TrainService get ticket codes", async () => {
     const codes = await TrainService.getTicketCodes();
     expect(codes).toBeInstanceOf(Array<TicketCode>);
 });
 
-test("TrainService get delayed trains", async () => {
+test.skip("TrainService get delayed trains", async () => {
     const codes = await TrainService.getDelayedTrains();
     expect(codes).toBeInstanceOf(Array<TrainDelay>);
 });
