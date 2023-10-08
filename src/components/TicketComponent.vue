@@ -22,9 +22,10 @@ const addLoading = ref<boolean>(false); // Shows if operation is in progress
 // Define a validation schema
 // (Because no field is strictly required, make nullable)
 const schema = yup.object({
-    selectedCode: yup.object(),
+    selectedCode: yup.object().nullable(),
     selectedNumber: yup
         .number()
+        .nullable()
         .positive()
         .test("len", "Lämna tomt eller ange ett nummer (3-5 siffror)", (val) => {
             if (val === undefined || val === null) {
@@ -32,7 +33,7 @@ const schema = yup.object({
             }
             return val >= 100 && val < 100000;
         }),
-    selectedDate: yup.date()
+    selectedDate: yup.date().nullable()
 });
 
 // Create a form context
