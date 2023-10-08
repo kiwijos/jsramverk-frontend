@@ -7,6 +7,7 @@ import type { TicketCode } from "@/models/TicketCode.model";
 import TrainService from "@/services/TrainService";
 
 import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/yup";
 import * as yup from "yup";
 
 const toast = useToast();
@@ -21,23 +22,22 @@ const addLoading = ref<boolean>(false); // Shows if operation is in progress
 // Define a validation schema
 // (Because no field is strictly required, make nullable)
 const schema = yup.object({
-    selectedCode: yup.object().nullable(),
+    selectedCode: yup.object(),
     selectedNumber: yup
         .number()
         .positive()
-        .nullable()
         .test("len", "Lämna tomt eller ange ett nummer (3-5 siffror)", (val) => {
             if (val === undefined || val === null) {
                 return true;
             }
             return val >= 100 && val < 100000;
         }),
-    selectedDate: yup.date().nullable()
+    selectedDate: yup.date()
 });
 
 // Create a form context
 const { meta, errors, defineComponentBinds, handleSubmit, resetForm } = useForm({
-    validationSchema: schema
+    validationSchema: toTypedSchema(schema)
 });
 
 // Define binds to form fields
@@ -94,7 +94,15 @@ const confirmDelete = () => {
 
 // Log values and errors if validation fails
 // (Remove when in production)
-function onInvalidSubmit({ values, errors, results }) {
+function onInvalidSubmit({
+    values,
+    errors,
+    results
+}: {
+    values: object;
+    errors: object;
+    results: object;
+}) {
     console.log(values); // current form values
     console.log(errors); // a map of field names and their first error message
     console.log(results); // a detailed map of field names and their validation results
@@ -104,7 +112,21 @@ function onInvalidSubmit({ values, errors, results }) {
 const submitUpdate = handleSubmit(onUpdateTicket, onInvalidSubmit);
 
 // Attempt to update the selected ticket
-async function onUpdateTicket(values) {
+async function onUpdateTicket(values: {
+    selectedCode: TicketCode;
+    selectedNumber: number;
+    selectedDate: Date;
+}) {
+    if (selectedTicket.value === null) {
+        toast.add({
+            severity: "error",
+            summary: "Ett fel uppstod",
+            detail: "Inget ärende är valt",
+            life: 3000
+        });
+        return;
+    }
+
     const request = {
         id: selectedTicket.value.id,
         code: values.selectedCode ? values.selectedCode.Code : undefined,
@@ -121,7 +143,7 @@ async function onUpdateTicket(values) {
         toast.add({
             severity: "info",
             summary: "Ärende ändrat",
-            detail: selectedTicket.value.id,
+            detail: result.data.id,
             life: 3000
         });
     } else {
@@ -135,7 +157,17 @@ async function onUpdateTicket(values) {
 }
 
 // Attempt to delete the selected ticket
-async function onDeleteTicket() {
+async function onDeleteTicket(): Promise<void> {
+    if (selectedTicket.value === null) {
+        toast.add({
+            severity: "error",
+            summary: "Ett fel uppstod",
+            detail: "Inget ärende är valt",
+            life: 3000
+        });
+        return;
+    }
+
     const request = {
         id: selectedTicket.value.id
     };
