@@ -7,9 +7,9 @@
 <script lang="ts">
 import type { Train } from "@/models/Train.model";
 import * as Libre from "maplibre-gl";
-import { shallowRef, onMounted, onUnmounted, markRaw, type Raw, type PropType, ref } from "vue";
-import { io } from "socket.io-client";
-import { stringifyQuery } from "vue-router";
+import { shallowRef, onMounted, onUnmounted, markRaw, type Raw, ref } from "vue";
+import { socket } from "@/socket";
+
 const trainMarkers = ref(new Map<string, Libre.Marker>());
 
 export default {
@@ -42,7 +42,6 @@ export default {
         };
 
         function openSocket() {
-            const socket = io(import.meta.env.VITE_API_URL);
             socket.on("message", (data: Train) => {
                 // add and update train markers
                 const train = trainMarkers.value.get(data.trainnumber);
