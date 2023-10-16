@@ -19,7 +19,7 @@ async function register() {
         email: email.value,
         password: password.value
     };
-    const result = await AuthService.register(request);
+    const result = await AuthService.registerGrapQL(request);
     if (result.success) {
         alert("Användare registrerad");
         router.push("/user/login");

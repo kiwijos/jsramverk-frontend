@@ -42,7 +42,7 @@ const password = ref("");
 const errorMessage = ref("");
 
 async function login() {
-    const result = await AuthService.login(username.value, password.value);
+    const result = await AuthService.loginGrapQL(username.value, password.value);
     if (result.success) {
         // Redirect to home page
         router.push("/delayed");
