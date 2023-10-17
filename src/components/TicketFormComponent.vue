@@ -43,6 +43,7 @@ import TicketCodeSelect from "./TicketCodeSelect.vue";
 
 import type { Ticket } from "@/models/Ticket.model";
 import type { TicketCode } from "@/models/TicketCode.model";
+import type { TicketUpdateDto } from "@/models/TicketUpdateDto.model";
 
 import TrainService from "@/services/TrainService";
 
@@ -137,11 +138,11 @@ async function onUpdateTicket(values: {
     selectedNumber: number | null;
     selectedDate: Date | null;
 }) {
-    const request = {
+    const request: TicketUpdateDto = {
         id: props.selectedTicket.id,
         code: values.selectedCode ? values.selectedCode.Code : undefined,
         trainnumber: values.selectedNumber ? values.selectedNumber.toString() : undefined,
-        traindate: values.selectedDate
+        traindate: values.selectedDate ? values.selectedDate : undefined
     };
 
     addLoading.value = true;
