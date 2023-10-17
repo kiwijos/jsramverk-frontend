@@ -18,6 +18,25 @@ onMounted(async () => {
     tickets.value = await TrainService.getTickets();
     ticketCodes.value = await TrainService.getTicketCodes();
 });
+
+// Listen for new data from the server
+socket.on("newdata", async (data) => {
+    if (data.deleted) {
+        // Remove the ticket from the list (and insert nothing)
+        tickets.value.splice(
+            tickets.value.findIndex((ticket) => ticket.id === data.id),
+            1
+        );
+    } else {
+        // Update the ticket in the list
+        const updatedTicket = await TrainService.getTicketById({ id: data.id });
+        tickets.value.splice(
+            tickets.value.findIndex((ticket) => ticket.id === data.id),
+            1,
+            updatedTicket
+        );
+    }
+});
 </script>
 
 <template>
