@@ -90,7 +90,9 @@ onMounted(async () => {
                             <span>{{ option?.Code }} - {{ option?.Level1Description }}</span>
                         </template>
                         <template #value="{ value }">
-                            <span v-if="value">{{ value?.Code }} - {{ value?.Level1Description }}</span>
+                            <span v-if="value"
+                                >{{ value?.Code }} - {{ value?.Level1Description }}</span
+                            >
                             <span v-else>Välj orsak</span>
                         </template>
                     </Dropdown>
