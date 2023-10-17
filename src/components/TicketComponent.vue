@@ -6,6 +6,8 @@ import type { Ticket } from "@/models/Ticket.model";
 import type { TicketCode } from "@/models/TicketCode.model";
 import TrainService from "@/services/TrainService";
 
+import { socket } from "@/socket";
+
 import TicketFormComponent from "./TicketFormComponent.vue";
 
 // Declare reactive variables
