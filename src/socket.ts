@@ -6,10 +6,7 @@ export const state = reactive({
     connected: false
 });
 
-export const socket = io(import.meta.env.VITE_API_URL, {
-    // Don't connect automatically, we want to wait for the user to log in
-    autoConnect: false
-});
+export const socket = io(import.meta.env.VITE_API_URL);
 
 // Listen for events
 socket.on("connect", () => {
