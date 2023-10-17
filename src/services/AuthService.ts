@@ -58,6 +58,94 @@ export default {
                 };
             });
     },
+    async loginGrapQL(username: string, password: string): Promise<LoginResult> {
+        this.logout();
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+        const graphqlQuery = {
+            query: `mutation (
+                    $username: String!,
+                    $password: String!
+                    ) {
+                    login (
+                        username: $username,
+                        password: $password
+                        ) {
+                            ok error data {
+                                token
+                                user {
+                                    username email
+                                }
+                            }
+                        }
+                    }`,
+            variables: {
+                username: username,
+                password: password
+            }
+        };
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery
+        });
+        if (response.data.data.login.ok) {
+            const token = response.data.data.login.data.token;
+            sessionStorage.setItem("x-access-token", token);
+            return {
+                success: true,
+                title: "Login successful",
+                detail: "You have been logged in"
+            };
+        } else {
+            return {
+                success: false,
+                title: "Login failed",
+                detail: response.data.data.login.error
+            };
+        }
+    },
+    async registerGrapQL(request: RegisterUser): Promise<LoginResult> {
+        this.logout();
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+        const graphqlQuery = {
+            query: `mutation (
+                    $username: String!,
+                    $password: String!,
+                    $email: String!
+                    ) {
+                    register (
+                        username: $username,
+                        password: $password,
+                        email: $email
+                        ) {
+                            ok error data
+                        }
+                    }`,
+            variables: {
+                username: request.username,
+                password: request.password,
+                email: request.email
+            }
+        };
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery
+        });
+        if (response.data.data.register.ok) {
+            return {
+                success: true,
+                title: response.data.data.register.data,
+                detail: response.data.data.register.data
+            };
+        } else {
+            return {
+                success: false,
+                title: response.data.data.register.error,
+                detail: response.data.data.register.error
+            };
+        }
+    },
     logout() {
         sessionStorage.removeItem("x-access-token");
     }
