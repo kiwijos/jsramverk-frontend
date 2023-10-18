@@ -2,13 +2,55 @@
     <form class="flex flex-column gap-3">
         <h2>Redigera ärende: {{ selectedTicket.id }}</h2>
         <Divider />
-        <TicketCodeSelect
-            name="selectedCode"
-            :ticketCodes="ticketCodes"
-            :placeholder="selectedTicket.code"
+        <label for="code">Kod</label>
+        <Dropdown
+            v-bind="selectedCode"
+            id="code"
+            :options="ticketCodes"
+            placeholder="Orsakskod"
+            :class="{ 'p-invalid': errors.selectedCode && meta.touched }"
+            aria-describedby="code-error"
+        >
+            <template #option="{ option }">
+                <span>{{ option?.Code }} - {{ option?.Level1Description }}</span>
+            </template>
+            <template #value="{ value }">
+                <span v-if="value">{{ value?.Code }} - {{ value?.Level1Description }}</span>
+                <span v-else>{{ selectedTicket.code }}</span>
+            </template>
+        </Dropdown>
+        <small class="p-error" id="code-error">{{
+            (errors.selectedCode && meta.touched) || "&nbsp;"
+        }}</small>
+        <label for="selectedNumber">Tågnummer</label>
+        <InputNumber
+            id="trainnumber"
+            v-bind="selectedNumber"
+            :class="{ 'p-invalid': errors.selectedNumber && meta.touched }"
+            :useGrouping="false"
+            aria-describedby="number-error"
+            :placeholder="selectedTicket.trainnumber"
         />
-        <TicketNumberInput name="selectedNumber" :placeholder="selectedTicket.trainnumber" />
-        <TicketDateCalendar name="selectedDate" :placeholder="selectedTicket.traindate" />
+        <small class="p-error" id="number-error">{{
+            (errors.selectedNumber && meta.touched) || "&nbsp;"
+        }}</small>
+        <label for="traindate">Datum</label>
+        <Calendar
+            id="traindate"
+            v-bind="selectedDate"
+            dateFormat="yy-mm-dd"
+            showIcon
+            showButtonBar
+            showTime
+            hourFormat="24"
+            :class="{ 'p-invalid': errors.selectedDate && meta.touched }"
+            aria-describedby="date-error"
+            :placeholder="selectedTicket.traindate"
+        >
+        </Calendar>
+        <small class="p-error" id="date-error">{{
+            (errors.selectedDate && meta.touched) || "&nbsp;"
+        }}</small>
         <ConfirmDialog></ConfirmDialog>
         <div class="card flex flex-wrap gap-2">
             <Button
@@ -37,13 +79,10 @@ import { toTypedSchema } from "@vee-validate/yup";
 import { ref, markRaw } from "vue";
 import type { Ref } from "vue";
 
-import TicketNumberInput from "./TicketNumberInput.vue";
-import TicketDateCalendar from "./TicketDateCalendar.vue";
-import TicketCodeSelect from "./TicketCodeSelect.vue";
-
 import type { Ticket } from "@/models/Ticket.model";
 import type { TicketCode } from "@/models/TicketCode.model";
 import type { TicketUpdateDto } from "@/models/TicketUpdateDto.model";
+import type { TicketResponse } from "@/models/TicketResponse.model";
 
 import TrainService from "@/services/TrainService";
 
@@ -59,7 +98,8 @@ const addLoading: Ref<boolean> = ref(false); // Shows if operation is in progres
 
 // Define a validation schema
 // Because no field is strictly required, make them nullable
-// Also, mark the schema as raw to avoid the overhead that otherwise comes with having it be reactive (which it doesn't need to be)
+// Also, mark the schema as raw to avoid the overhead that otherwise comes with having it be reactive
+// (which it doesn't need to be)
 const schema = markRaw(
     object({
         selectedCode: object().nullable(),
@@ -77,9 +117,14 @@ const schema = markRaw(
 );
 
 // Create a form context
-const { handleSubmit, resetForm } = useForm({
+const { handleSubmit, meta, resetForm, defineComponentBinds, errors } = useForm({
     validationSchema: toTypedSchema(schema) // Convert the schema to a type-safe object
 });
+
+// Bind the fields
+const selectedCode = defineComponentBinds("selectedCode");
+const selectedNumber = defineComponentBinds("selectedNumber");
+const selectedDate = defineComponentBinds("selectedDate");
 
 // Dialog showed when attempting to update a ticket
 const confirmUpdate = () => {
@@ -139,14 +184,14 @@ async function onUpdateTicket(values: {
     selectedDate: Date | null;
 }) {
     const request: TicketUpdateDto = {
-        id: props.selectedTicket.id,
-        code: values.selectedCode ? values.selectedCode.Code : undefined,
-        trainnumber: values.selectedNumber ? values.selectedNumber.toString() : undefined,
-        traindate: values.selectedDate ? values.selectedDate : undefined
+        id: props.selectedTicket?.id,
+        code: values?.selectedCode ? values.selectedCode?.Code : undefined,
+        trainnumber: values?.selectedNumber ? values.selectedNumber.toString() : undefined,
+        traindate: values?.selectedDate ? values.selectedDate : undefined
     };
 
     addLoading.value = true;
-    const result = await TrainService.updateTicket(request);
+    const result: TicketResponse = await TrainService.updateTicket(request);
     addLoading.value = false;
 
     if (result.ok) {
@@ -157,6 +202,7 @@ async function onUpdateTicket(values: {
             detail: result.data.id,
             life: 3000
         });
+        resetForm();
     } else {
         toast.add({
             severity: "error",
