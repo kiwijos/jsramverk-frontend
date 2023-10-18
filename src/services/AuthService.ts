@@ -1,7 +1,6 @@
 import type { LoginResult } from "./../models/LoginResult.model";
 import axios from "axios";
 import type { RegisterUser } from "@/models/RegisterUser.model";
-import { socket } from "@/socket";
 
 export default {
     async login(username: string, password: string): Promise<LoginResult> {
@@ -9,7 +8,6 @@ export default {
             .post(`${import.meta.env.VITE_API_URL}/auth/login`, { username, password })
             .then((response) => {
                 // Get and save token to session
-                socket.connect();
                 const token = response.data.data.token;
                 sessionStorage.setItem("x-access-token", token);
                 return {
@@ -150,6 +148,5 @@ export default {
     },
     logout() {
         sessionStorage.removeItem("x-access-token");
-        socket.disconnect();
     }
 };

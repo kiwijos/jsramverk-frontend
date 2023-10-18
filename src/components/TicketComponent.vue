@@ -31,7 +31,8 @@ socket.on("newdata", async (data) => {
         );
     } else {
         // Update the ticket in the list
-        const updatedTicket = await TrainService.getTicketById({ id: data.id });
+        const updatedTicket: Ticket = await TrainService.getTicketById({ id: data.id });
+
         tickets.value.splice(
             tickets.value.findIndex((ticket) => ticket.id === data.id),
             1,

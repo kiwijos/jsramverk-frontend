@@ -34,7 +34,7 @@ export default {
 
         return response.data.data.tickets;
     },
-    async getTicketById(request: { id: string }): Promise<Ticket[]> {
+    async getTicketById(request: { id: string }): Promise<Ticket> {
         const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
 
         const graphqlQuery = {
