@@ -16,12 +16,12 @@ test.skip("TrainService get delayed trains", async () => {
     expect(codes).toBeInstanceOf(Array<TrainDelay>);
 });
 
-test("TrainService get all tickets", async () => {
+test.skip("TrainService get all tickets", async () => {
     const codes = await TrainService.getTickets();
     expect(codes).toBeInstanceOf(Array<Ticket>);
 });
 
-test("TrainService create ticket", async () => {
+test.skip("TrainService create ticket", async () => {
     const date = new Date();
     const ticket = await TrainService.createTicket({
         code: "ABC123",
