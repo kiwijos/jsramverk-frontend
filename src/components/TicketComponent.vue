@@ -63,11 +63,17 @@ socket.on("ticketLockedByMe", () => {
     ticketLockedByOther.value = false;
 });
 
-function onRowSelect(event): void {
+interface TicketEvent extends Event {
+    data: {
+        id: string;
+    };
+}
+
+function onRowSelect(event: TicketEvent): void {
     socket.emit("lockTicket", event.data.id);
 }
 
-function onRowUnselect(event): void {
+function onRowUnselect(event: TicketEvent): void {
     socket.emit("unlockTicket", event.data.id);
 }
 </script>
