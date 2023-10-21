@@ -6,7 +6,15 @@ export const state = reactive({
     connected: false
 });
 
-export const socket = io(import.meta.env.VITE_API_URL);
+export const socket = io(import.meta.env.VITE_API_URL, {
+    autoConnect: false,
+    // send token on connection
+    auth: (cb) => {
+        cb({
+            token: sessionStorage.getItem("x-access-token")
+        });
+    }
+});
 
 // Listen for events
 socket.on("connect", () => {
@@ -15,4 +23,8 @@ socket.on("connect", () => {
 
 socket.on("disconnect", () => {
     state.connected = false;
+});
+
+socket.on("connect_error", (err) => {
+    console.error(`connect_error due to ${err.name}: ${err.message}`);
 });

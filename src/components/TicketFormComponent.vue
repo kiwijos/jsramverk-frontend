@@ -89,7 +89,7 @@ import TrainService from "@/services/TrainService";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 
-import { socket } from "@/socket";
+import { socket, state } from "@/socket";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -116,7 +116,7 @@ const schema = markRaw(
     })
 );
 
-// Create a form context
+// Create a form context for this component
 const { handleSubmit, meta, resetForm, defineComponentBinds, errors } = useForm({
     validationSchema: toTypedSchema(schema) // Convert the schema to a type-safe object
 });
@@ -125,6 +125,20 @@ const { handleSubmit, meta, resetForm, defineComponentBinds, errors } = useForm(
 const selectedCode = defineComponentBinds("selectedCode");
 const selectedNumber = defineComponentBinds("selectedNumber");
 const selectedDate = defineComponentBinds("selectedDate");
+
+const checkSocketConnected = (): boolean => {
+    if (state.connected === false) {
+        toast.add({
+            severity: "error",
+            summary: "Kan inte ansluta din socket",
+            detail: "Vänligen försök att logga in igen.",
+            life: 3000
+        });
+        return false;
+    }
+
+    return true;
+};
 
 // Dialog showed when attempting to update a ticket
 const confirmUpdate = () => {
@@ -183,6 +197,10 @@ async function onUpdateTicket(values: {
     selectedNumber: number | null;
     selectedDate: Date | null;
 }) {
+    if (!checkSocketConnected()) {
+        return;
+    }
+
     const request: TicketUpdateDto = {
         id: props.selectedTicket?.id,
         code: values?.selectedCode ? values.selectedCode?.Code : undefined,
@@ -215,6 +233,10 @@ async function onUpdateTicket(values: {
 
 // Attempt to delete the selected ticket
 async function onDeleteTicket(): Promise<void> {
+    if (!checkSocketConnected()) {
+        return;
+    }
+
     const request = {
         id: props.selectedTicket.id
     };
