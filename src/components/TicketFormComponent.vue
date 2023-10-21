@@ -1,6 +1,5 @@
 <template>
     <form class="flex flex-column gap-3">
-        <h2>Redigera ärende: {{ selectedTicket.id }}</h2>
         <Divider />
         <label for="code">Kod</label>
         <Dropdown
@@ -10,6 +9,7 @@
             placeholder="Orsakskod"
             :class="{ 'p-invalid': errors.selectedCode && meta.touched }"
             aria-describedby="code-error"
+            :disabled="locked"
         >
             <template #option="{ option }">
                 <span>{{ option?.Code }} - {{ option?.Level1Description }}</span>
@@ -30,6 +30,7 @@
             :useGrouping="false"
             aria-describedby="number-error"
             :placeholder="selectedTicket.trainnumber"
+            :disabled="locked"
         />
         <small class="p-error" id="number-error">{{
             (errors.selectedNumber && meta.touched) || "&nbsp;"
@@ -46,6 +47,7 @@
             :class="{ 'p-invalid': errors.selectedDate && meta.touched }"
             aria-describedby="date-error"
             :placeholder="selectedTicket.traindate"
+            :disabled="locked"
         >
         </Calendar>
         <small class="p-error" id="date-error">{{
@@ -57,14 +59,14 @@
                 @click="confirmUpdate()"
                 icon="pi pi-check"
                 label="Ändra"
-                :disabled="addLoading"
+                :disabled="addLoading || locked"
             ></Button>
             <Button
                 @click="confirmDelete()"
                 icon="pi pi-times"
                 severity="danger"
                 label="Ta bort"
-                :disabled="addLoading"
+                :disabled="addLoading || locked"
             ></Button>
         </div>
     </form>
@@ -126,12 +128,21 @@ const selectedCode = defineComponentBinds("selectedCode");
 const selectedNumber = defineComponentBinds("selectedNumber");
 const selectedDate = defineComponentBinds("selectedDate");
 
-const checkSocketConnected = (): boolean => {
+const checkSocket = (): boolean => {
     if (state.connected === false) {
         toast.add({
             severity: "error",
             summary: "Kan inte ansluta din socket",
             detail: "Vänligen försök att logga in igen.",
+            life: 3000
+        });
+        return false;
+    }
+    if (props.locked === true) {
+        toast.add({
+            severity: "error",
+            summary: "Någon annan behandlar detta ärende",
+            detail: "Vänligen försök igen senare.",
             life: 3000
         });
         return false;
@@ -197,7 +208,7 @@ async function onUpdateTicket(values: {
     selectedNumber: number | null;
     selectedDate: Date | null;
 }) {
-    if (!checkSocketConnected()) {
+    if (!checkSocket()) {
         return;
     }
 
@@ -233,7 +244,7 @@ async function onUpdateTicket(values: {
 
 // Attempt to delete the selected ticket
 async function onDeleteTicket(): Promise<void> {
-    if (!checkSocketConnected()) {
+    if (!checkSocket()) {
         return;
     }
 
@@ -267,5 +278,6 @@ async function onDeleteTicket(): Promise<void> {
 const props = defineProps<{
     selectedTicket: Ticket;
     ticketCodes: TicketCode[];
+    locked: boolean;
 }>();
 </script>
