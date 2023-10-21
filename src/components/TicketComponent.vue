@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import type { Ref } from "vue";
 
 import type { Ticket } from "@/models/Ticket.model";
@@ -14,11 +14,19 @@ import TicketFormComponent from "./TicketFormComponent.vue";
 const tickets: Ref<Ticket[]> = ref([]);
 const selectedTicket: Ref<Ticket | null> = ref(null); // Ticket selected from table
 const ticketCodes: Ref<TicketCode[]> = ref([]);
+const ticketLockedByOther: Ref<boolean> = ref(false);
 
 // Get all tickets and codes when the component is mounted
 onMounted(async () => {
     tickets.value = await TrainService.getTickets();
     ticketCodes.value = await TrainService.getTicketCodes();
+});
+
+// Unlock the ticket when the user navigates away from the page
+onBeforeUnmount(() => {
+    if (selectedTicket.value?.id) {
+        socket.emit("unlockTicket", selectedTicket.value?.id);
+    }
 });
 
 // Listen for new data from the server
@@ -40,6 +48,28 @@ socket.on("newdata", async (data) => {
         );
     }
 });
+
+socket.on("ticketLockedByOther", (id) => {
+    if (selectedTicket.value?.id !== id) {
+        return;
+    }
+
+    console.log("ticketLockedByOther", id);
+
+    ticketLockedByOther.value = true;
+});
+
+socket.on("ticketLockedByMe", () => {
+    ticketLockedByOther.value = false;
+});
+
+function onRowSelect(event): void {
+    socket.emit("lockTicket", event.data.id);
+}
+
+function onRowUnselect(event): void {
+    socket.emit("unlockTicket", event.data.id);
+}
 </script>
 
 <template>
@@ -62,6 +92,8 @@ socket.on("newdata", async (data) => {
             dataKey="id"
             :metaKeySelection="false"
             v-model:selection="selectedTicket"
+            @row-select="onRowSelect"
+            @row-unselect="onRowUnselect"
         >
             <Column field="code" header="Kod" sortable style="width: 30%"></Column>
             <Column field="trainnumber" header="Tågnummer" sortable style="width: 35%"></Column>
@@ -75,7 +107,17 @@ socket.on("newdata", async (data) => {
 
         <!-- Right-side form (displayed when a ticket is selected) -->
         <div v-if="selectedTicket" class="w-5">
-            <TicketFormComponent :selectedTicket="selectedTicket" :ticketCodes="ticketCodes" />
+            <div v-if="ticketLockedByOther">
+                <h2 class="p-error">Ärendet behandlas just nu av en annan användare</h2>
+            </div>
+            <div v-else>
+                <h2>Redigera ärende: {{ selectedTicket.id }}</h2>
+            </div>
+            <TicketFormComponent
+                :selectedTicket="selectedTicket"
+                :ticketCodes="ticketCodes"
+                :locked="ticketLockedByOther"
+            />
         </div>
     </div>
 </template>
