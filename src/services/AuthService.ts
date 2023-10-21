@@ -60,7 +60,7 @@ export default {
     },
     async loginGrapQL(username: string, password: string): Promise<LoginResult> {
         this.logout();
-        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/auth`;
         const graphqlQuery = {
             query: `mutation (
                     $username: String!,
@@ -106,7 +106,7 @@ export default {
     },
     async registerGrapQL(request: RegisterUser): Promise<LoginResult> {
         this.logout();
-        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/auth`;
         const graphqlQuery = {
             query: `mutation (
                     $username: String!,

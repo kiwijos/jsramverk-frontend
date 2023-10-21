@@ -8,12 +8,37 @@ import axios from "axios";
 
 export default {
     async getDelayedTrains(): Promise<TrainDelay[]> {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/delayed`, {
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+
+        const graphqlQuery = {
+            query: `query delays {
+                trainDelays {
+                    ok error data {
+                        ActivityId
+                        ActivityType
+                        AdvertisedTimeAtLocation
+                        AdvertisedTrainIdent
+                        Canceled
+                        EstimatedTimeAtLocation
+                        FromLocation { LocationName Order Priority }
+                        LocationSignature
+                        OperationalTrainNumber
+                        ToLocation { LocationName Order Priority }
+                        TrainOwner
+                    }
+                }
+            }`
+        };
+
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery,
             headers: {
                 "x-access-token": sessionStorage.getItem("x-access-token")
             }
         });
-        return response.data.data;
+        return response.data.data.trainDelays.data;
     },
     async getTickets(): Promise<Ticket[]> {
         const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
@@ -29,7 +54,10 @@ export default {
         const response = await axios({
             url: graphqlEndpoint,
             method: "post",
-            data: graphqlQuery
+            data: graphqlQuery,
+            headers: {
+                "x-access-token": sessionStorage.getItem("x-access-token")
+            }
         });
 
         return response.data.data.tickets;
@@ -51,18 +79,39 @@ export default {
         const response = await axios({
             url: graphqlEndpoint,
             method: "post",
-            data: graphqlQuery
+            data: graphqlQuery,
+            headers: {
+                "x-access-token": sessionStorage.getItem("x-access-token")
+            }
         });
 
         return response.data.data.ticket;
     },
     async getTicketCodes(): Promise<TicketCode[]> {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/codes`, {
+        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+
+        const graphqlQuery = {
+            query: `
+            query {
+                ticketCodes { 
+                    ok error data {
+                        Code
+                        Level1Description
+                    }
+                }
+            }`
+        };
+
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery,
             headers: {
                 "x-access-token": sessionStorage.getItem("x-access-token")
             }
         });
-        return response.data.data;
+
+        return response.data.data.ticketCodes.data;
     },
     async createTicket(request: TicketCreateDto): Promise<Ticket> {
         const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
@@ -96,7 +145,10 @@ export default {
         const response = await axios({
             url: graphqlEndpoint,
             method: "post",
-            data: graphqlQuery
+            data: graphqlQuery,
+            headers: {
+                "x-access-token": sessionStorage.getItem("x-access-token")
+            }
         });
 
         return response.data.data.createTicket.data;
@@ -136,7 +188,10 @@ export default {
         const response = await axios({
             url: graphqlEndpoint,
             method: "post",
-            data: graphqlQuery
+            data: graphqlQuery,
+            headers: {
+                "x-access-token": sessionStorage.getItem("x-access-token")
+            }
         });
 
         return response.data.data.updateTicket;
@@ -165,7 +220,10 @@ export default {
         const response = await axios({
             url: graphqlEndpoint,
             method: "post",
-            data: graphqlQuery
+            data: graphqlQuery,
+            headers: {
+                "x-access-token": sessionStorage.getItem("x-access-token")
+            }
         });
 
         return response.data.data.deleteTicket;
