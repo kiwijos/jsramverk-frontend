@@ -1,15 +1,28 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import type { Ref } from "vue";
 import type { TrainDelay } from "@/models/TrainDelay.model";
 import TrainService from "@/services/TrainService";
 import type { TicketCode } from "@/models/TicketCode.model";
 
-const delayedTrains = ref<TrainDelay[]>([]);
-const dialogVisible = ref<boolean>(false);
-const dialogData = ref<TrainDelay | null>(null);
-const ticketCodes = ref<TicketCode[]>([]);
-const selectedTicketCode = ref<TicketCode | null>(null);
-const addLoading = ref<boolean>(false);
+const delayedTrains: Ref<TrainDelay[]> = ref([]);
+const dialogVisible: Ref<boolean> = ref(false);
+const dialogData: Ref<TrainDelay | null> = ref(null);
+const ticketCodes: Ref<TicketCode[]> = ref([]);
+const selectedTicketCode: Ref<TicketCode | null> = ref(null);
+const addLoading: Ref<boolean> = ref(false);
+
+const createTicket = async () => {
+    const request = {
+        code: selectedTicketCode.value?.Code as string,
+        traindate: new Date(),
+        trainnumber: dialogData.value?.OperationalTrainNumber as string
+    };
+    addLoading.value = true;
+    await TrainService.createTicket(request);
+    addLoading.value = false;
+    dialogVisible.value = false;
+};
 
 onMounted(async () => {
     delayedTrains.value = await TrainService.getDelayedTrains();
@@ -65,7 +78,7 @@ onMounted(async () => {
                                 dialogVisible = true;
                             }
                         "
-                    />
+                    ></Button>
                 </template>
             </Column>
         </DataTable>
@@ -100,20 +113,8 @@ onMounted(async () => {
                         label="Skapa ärende"
                         class="p-button-rounded p-button-success p-button-sm"
                         :loading="addLoading"
-                        @click="
-                            async () => {
-                                const request = {
-                                    code: selectedTicketCode?.Code as string,
-                                    traindate: new Date(),
-                                    trainnumber: dialogData?.OperationalTrainNumber as string
-                                };
-                                addLoading = true;
-                                await TrainService.createTicket(request);
-                                addLoading = false;
-                                dialogVisible = false;
-                            }
-                        "
-                    />
+                        @click="createTicket"
+                    ></Button>
                 </div>
             </div>
         </div>
