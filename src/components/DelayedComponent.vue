@@ -4,16 +4,9 @@ import type { Ref } from "vue";
 import type { TrainDelay } from "@/models/TrainDelay.model";
 import TrainService from "@/services/TrainService";
 import type { TicketCode } from "@/models/TicketCode.model";
+import type { TrainStation } from "@/models/TrainStation.model";
 import type { TrainDelayWithStationDto } from "@/models/TrainDelayWithStationDto.model";
-
-interface TrainDelayGroup {
-    id: string;
-    data: TrainDelayWithStationDto[];
-}
-
-interface TrainDelayGroupAccumulator {
-    [key: string]: TrainDelayGroup;
-}
+import type { TrainDelayGroup } from "@/models/TrainDelayGroup.model";
 
 const trainStations: Ref<TrainStation[]> = ref([]);
 const delayedTrains: Ref<TrainDelayGroup[]> = ref([]);
@@ -23,6 +16,7 @@ const ticketCodes: Ref<TicketCode[]> = ref([]);
 const selectedTicketCode: Ref<TicketCode | null> = ref(null);
 const addLoading: Ref<boolean> = ref(false);
 
+// This could be just a sub-set of delayedTrains, or all of them, or none of them
 const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
 
 const createTicket = async () => {
@@ -44,19 +38,20 @@ const collapseAll = () => {
     expandedRows.value = null;
 };
 
-const onRowExpand = (event) => {
-    //
-};
+// const onRowExpand = (event) => {
+//     //
+// };
 
-const onRowCollapse = (event) => {
-    //
-};
+// const onRowCollapse = (event) => {
+//     //
+// };
 
 const getStationBySignature = (signature: string) => {
     return trainStations.value.find((station) => station.LocationSignature === signature);
 };
 
 onMounted(() => {
+    addLoading.value = true;
     Promise.all([TrainService.getTrainStations(), TrainService.getDelayedTrains()]).then(
         ([stations, delays]) => {
             trainStations.value = stations;
@@ -65,29 +60,30 @@ onMounted(() => {
 
             // e.g. OperationalTrainNumber: 1234, delays: [{...}, {...}]
             // acc is the accumulator, the object we are building
-            const data = delays.reduce((acc: TrainDelayGroupAccumulator, delay: TrainDelay) => {
-                if (!acc[delay.OperationalTrainNumber]) {
-                    acc[delay.OperationalTrainNumber] = {
-                        id: delay.OperationalTrainNumber,
-                        data: []
+            const data = delays.reduce(
+                (acc: { [key: string]: TrainDelayGroup }, delay: TrainDelay) => {
+                    if (!acc[delay.OperationalTrainNumber]) {
+                        acc[delay.OperationalTrainNumber] = {
+                            id: delay.OperationalTrainNumber,
+                            data: []
+                        };
+                    }
+
+                    // Create a new delay object with the station so we can show the station name in the table,
+                    // instead of just the LocationSignature
+                    const delayWithStation: TrainDelayWithStationDto = {
+                        ...delay,
+                        Station: getStationBySignature(delay.LocationSignature)
                     };
-                }
 
-                // Create a new delay object with the station so we can show the station name in the table,
-                // instead of just the LocationSignature
-                const delayWithStation: TrainDelayWithStationDto = {
-                    ...delay,
-                    Station: getStationBySignature(delay.LocationSignature)
-                };
+                    acc[delay.OperationalTrainNumber].data.push(delayWithStation);
 
-                acc[delay.OperationalTrainNumber].data.push(delayWithStation);
-
-                return acc;
-            }, {});
-
-            console.log(data);
-
+                    return acc;
+                },
+                {}
+            );
             delayedTrains.value = Object.values(data);
+            addLoading.value = false;
         }
     );
 
@@ -103,13 +99,12 @@ onMounted(() => {
             v-model:expandedRows="expandedRows"
             :value="delayedTrains"
             dataKey="id"
-            @rowExpand="onRowExpand"
-            @rowCollapse="onRowCollapse"
             tableStyle="min-width: 40rem"
-            :paginator="true"
+            paginator
+            :first="0"
             :rows="10"
-            :rowsPerPageOptions="[10, 25, 50]"
-            :loading="delayedTrains.length === 0"
+            :rowsPerPageOptions="[5, 10, 25]"
+            :loading="addLoading"
             :stripedRows="true"
         >
             <template #header>
@@ -128,12 +123,12 @@ onMounted(() => {
             <Column header="Sträcka">
                 <template #body="{ data }">
                     <span>{{
-                        getStationBySignature(data.data[0].FromLocation[0].LocationName)
+                        getStationBySignature(data?.data[0].FromLocation[0].LocationName)
                             ?.AdvertisedLocationName
                     }}</span>
                     <span> - </span>
                     <span>{{
-                        getStationBySignature(data.data[0].ToLocation[0].LocationName)
+                        getStationBySignature(data?.data[0].ToLocation[0].LocationName)
                             ?.AdvertisedLocationName
                     }}</span>
                 </template>
@@ -159,6 +154,12 @@ onMounted(() => {
                 <div class="p-3">
                     <div class="flex flex-wrap justify-content-between flex gap-2">
                         <h5>Förseningar för tåg {{ slotProps.data.id }}</h5>
+                        <Button
+                            text
+                            icon="pi pi-map"
+                            label="Visa Sträcka"
+                            @click="toggleMapRoute(slotProps.data)"
+                        ></Button>
                     </div>
                     <DataTable
                         :value="slotProps.data.data"
