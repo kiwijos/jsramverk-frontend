@@ -59,8 +59,8 @@ onMounted(async () => {
     // acc is the accumulator, the object we are building
     const data = delays.reduce((acc: { [key: string]: TrainDelayGroup }, delay: TrainDelay) => {
         if (!acc[delay.OperationalTrainNumber]) {
-            let fromStation: TrainStation | null;
-            let toStation: TrainStation | null;
+            let fromStation: TrainStation | null = null;
+            let toStation: TrainStation | null = null;
 
             if (delay.FromLocation?.length > 0) {
                 fromStation = getStationBySignature(delay.FromLocation[0].LocationName);
