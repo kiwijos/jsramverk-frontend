@@ -38,58 +38,59 @@ const collapseAll = () => {
     expandedRows.value = null;
 };
 
-// const onRowExpand = (event) => {
-//     //
-// };
-
-// const onRowCollapse = (event) => {
-//     //
-// };
-
 const getStationBySignature = (signature: string) => {
     return trainStations.value.find((station) => station.LocationSignature === signature);
 };
 
-onMounted(() => {
+onMounted(async () => {
     addLoading.value = true;
-    Promise.all([TrainService.getTrainStations(), TrainService.getDelayedTrains()]).then(
-        ([stations, delays]) => {
-            trainStations.value = stations;
-            // Create a datastructure with OperationalTrainNumber as key and group
-            // all delays for that train under that key
 
-            // e.g. OperationalTrainNumber: 1234, delays: [{...}, {...}]
-            // acc is the accumulator, the object we are building
-            const data = delays.reduce(
-                (acc: { [key: string]: TrainDelayGroup }, delay: TrainDelay) => {
-                    if (!acc[delay.OperationalTrainNumber]) {
-                        acc[delay.OperationalTrainNumber] = {
-                            id: delay.OperationalTrainNumber,
-                            data: []
-                        };
-                    }
+    trainStations.value = await TrainService.getTrainStations();
 
-                    // Create a new delay object with the station so we can show the station name in the table,
-                    // instead of just the LocationSignature
-                    const delayWithStation: TrainDelayWithStationDto = {
-                        ...delay,
-                        Station: getStationBySignature(delay.LocationSignature)
-                    };
+    const delays = await TrainService.getDelayedTrains();
 
-                    acc[delay.OperationalTrainNumber].data.push(delayWithStation);
+    // Create a datastructure with OperationalTrainNumber as key and group
+    // all delays for that train under that key
+    // e.g. OperationalTrainNumber: 1234, delays: [{...}, {...}]
+    // acc is the accumulator, the object we are building
+    const data = delays.reduce((acc: { [key: string]: TrainDelayGroup }, delay: TrainDelay) => {
+        if (!acc[delay.OperationalTrainNumber]) {
+            let fromStation = null;
+            let toStation = null;
 
-                    return acc;
-                },
-                {}
-            );
-            delayedTrains.value = Object.values(data);
-            addLoading.value = false;
+            if (delay.FromLocation?.length > 0) {
+                fromStation = getStationBySignature(delay.FromLocation[0].LocationName);
+            }
+
+            if (delay.ToLocation?.length > 0) {
+                toStation = getStationBySignature(delay.ToLocation[0].LocationName);
+            }
+
+            acc[delay.OperationalTrainNumber] = {
+                id: delay.OperationalTrainNumber,
+                fromStation,
+                toStation,
+                data: []
+            };
         }
-    );
 
-    TrainService.getTicketCodes().then((data) => {
-        ticketCodes.value = data;
-    });
+        // Create a new delay object with the station so we can show the station name in the table,
+        // instead of just the LocationSignature
+        const delayWithStation: TrainDelayWithStationDto = {
+            ...delay,
+            Station: getStationBySignature(delay.LocationSignature)
+        };
+
+        acc[delay.OperationalTrainNumber].data.push(delayWithStation);
+
+        return acc;
+    }, {});
+
+    delayedTrains.value = Object.values(data);
+
+    ticketCodes.value = await TrainService.getTicketCodes();
+
+    addLoading.value = false;
 });
 </script>
 
@@ -122,15 +123,9 @@ onMounted(() => {
             <Column field="id" header="Tåg" />
             <Column header="Sträcka">
                 <template #body="{ data }">
-                    <span>{{
-                        getStationBySignature(data?.data[0].FromLocation[0].LocationName)
-                            ?.AdvertisedLocationName
-                    }}</span>
+                    <span>{{ data?.fromStation?.AdvertisedLocationName }}</span>
                     <span> - </span>
-                    <span>{{
-                        getStationBySignature(data?.data[0].ToLocation[0].LocationName)
-                            ?.AdvertisedLocationName
-                    }}</span>
+                    <span>{{ data?.toStation?.AdvertisedLocationName }}</span>
                 </template>
             </Column>
             <Column headerStyle="width:4rem">
@@ -154,12 +149,6 @@ onMounted(() => {
                 <div class="p-3">
                     <div class="flex flex-wrap justify-content-between flex gap-2">
                         <h5>Förseningar för tåg {{ slotProps.data.id }}</h5>
-                        <Button
-                            text
-                            icon="pi pi-map"
-                            label="Visa Sträcka"
-                            @click="toggleMapRoute(slotProps.data)"
-                        ></Button>
                     </div>
                     <DataTable
                         :value="slotProps.data.data"
