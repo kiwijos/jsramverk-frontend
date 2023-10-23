@@ -56,13 +56,13 @@
         <ConfirmDialog></ConfirmDialog>
         <div class="card flex flex-wrap gap-2">
             <Button
-                @click="confirmUpdate()"
+                @click="confirmUpdate"
                 icon="pi pi-check"
                 label="Ändra"
                 :disabled="addLoading || locked"
             ></Button>
             <Button
-                @click="confirmDelete()"
+                @click="confirmDelete"
                 icon="pi pi-times"
                 severity="danger"
                 label="Ta bort"

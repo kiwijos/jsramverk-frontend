@@ -69,19 +69,17 @@ interface TicketEvent extends Event {
     };
 }
 
-function onRowSelect(event: TicketEvent): void {
+const onRowSelect = (event: TicketEvent): void => {
     socket.emit("lockTicket", event.data.id);
-}
+};
 
-function onRowUnselect(event: TicketEvent): void {
+const onRowUnselect = (event: TicketEvent): void => {
     socket.emit("unlockTicket", event.data.id);
-}
+};
 </script>
 
 <template>
-    <h1 class="pt-3 px-3">Ärenden</h1>
-    <Divider />
-    <div class="flex gap-3">
+    <div class="flex gap-6">
         <!-- Left-side table -->
         <DataTable
             :value="tickets"
@@ -90,8 +88,8 @@ function onRowUnselect(event: TicketEvent): void {
             :rowsPerPageOptions="[10, 25, 50]"
             :loading="tickets.length === 0"
             :stripedRows="true"
-            class="w-5"
             sortField="traindate"
+            tableStyle="min-width: 30rem"
             :sortOrder="-1"
             removableSort
             selectionMode="single"

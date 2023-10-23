@@ -1,74 +1,215 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import type { Ref } from "vue";
 import type { TrainDelay } from "@/models/TrainDelay.model";
 import TrainService from "@/services/TrainService";
 import type { TicketCode } from "@/models/TicketCode.model";
+import type { TrainStation } from "@/models/TrainStation.model";
+import type { TrainDelayWithStationDto } from "@/models/TrainDelayWithStationDto.model";
+import type { TrainDelayGroup } from "@/models/TrainDelayGroup.model";
 
-const delayedTrains = ref<TrainDelay[]>([]);
-const dialogVisible = ref<boolean>(false);
-const dialogData = ref<TrainDelay | null>(null);
-const ticketCodes = ref<TicketCode[]>([]);
-const selectedTicketCode = ref<TicketCode | null>(null);
-const addLoading = ref<boolean>(false);
+const trainStations: Ref<TrainStation[]> = ref([]);
+const delayedTrains: Ref<TrainDelayGroup[]> = ref([]);
+const dialogVisible: Ref<boolean> = ref(false);
+const dialogData: Ref<TrainDelay | null> = ref(null);
+const ticketCodes: Ref<TicketCode[]> = ref([]);
+const selectedTicketCode: Ref<TicketCode | null> = ref(null);
+const addLoading: Ref<boolean> = ref(false);
+
+// This could be just a sub-set of delayedTrains, or all of them, or none of them
+const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
+
+const createTicket = async () => {
+    const request = {
+        code: selectedTicketCode.value?.Code as string,
+        traindate: new Date(),
+        trainnumber: dialogData.value?.OperationalTrainNumber as string
+    };
+    addLoading.value = true;
+    await TrainService.createTicket(request);
+    addLoading.value = false;
+    dialogVisible.value = false;
+};
+
+const expandAll = () => {
+    expandedRows.value = delayedTrains.value.filter((delay) => delay.id);
+};
+const collapseAll = () => {
+    expandedRows.value = null;
+};
+
+const getStationBySignature = (signature: string): TrainStation | null => {
+    return (
+        trainStations.value.find(
+            (station: TrainStation) => station.LocationSignature === signature
+        ) || null
+    );
+};
 
 onMounted(async () => {
-    delayedTrains.value = await TrainService.getDelayedTrains();
+    addLoading.value = true;
+
+    trainStations.value = await TrainService.getTrainStations();
+
+    const delays = await TrainService.getDelayedTrains();
+
+    // Create a datastructure with OperationalTrainNumber as key and group
+    // all delays for that train under that key
+    // e.g. OperationalTrainNumber: 1234, delays: [{...}, {...}]
+    // acc is the accumulator, the object we are building
+    const data = delays.reduce((acc: { [key: string]: TrainDelayGroup }, delay: TrainDelay) => {
+        if (!acc[delay.OperationalTrainNumber]) {
+            let fromStation: TrainStation | null = null;
+            let toStation: TrainStation | null = null;
+
+            if (delay.FromLocation?.length > 0) {
+                fromStation = getStationBySignature(delay.FromLocation[0].LocationName);
+            }
+
+            if (delay.ToLocation?.length > 0) {
+                toStation = getStationBySignature(delay.ToLocation[0].LocationName);
+            }
+
+            acc[delay.OperationalTrainNumber] = {
+                id: delay.OperationalTrainNumber,
+                fromStation,
+                toStation,
+                data: []
+            };
+        }
+
+        // Create a new delay object with the station so we can show the station name in the table,
+        // instead of just the LocationSignature
+        const delayWithStation: TrainDelayWithStationDto = {
+            ...delay,
+            Station: getStationBySignature(delay.LocationSignature)
+        };
+
+        acc[delay.OperationalTrainNumber].data.push(delayWithStation);
+
+        return acc;
+    }, {});
+
+    delayedTrains.value = Object.values(data);
+
     ticketCodes.value = await TrainService.getTicketCodes();
+
+    addLoading.value = false;
 });
 </script>
 
 <template>
-    <h1 class="mt-3 ml-3">Försenade tåg</h1>
-    <Divider />
-    <div class="flex gap-3 p-3">
+    <div class="flex">
         <DataTable
+            v-model:expandedRows="expandedRows"
             :value="delayedTrains"
-            :paginator="true"
+            dataKey="id"
+            tableStyle="min-width: 40rem"
+            paginator
+            :first="0"
             :rows="10"
-            :rowsPerPageOptions="[10, 25, 50]"
-            :loading="delayedTrains.length === 0"
+            :rowsPerPageOptions="[5, 10, 25]"
+            :loading="addLoading"
             :stripedRows="true"
-            class="w-5"
         >
-            <Column field="OperationalTrainNumber" header="Tågnummer"></Column>
-            <Column field="LocationSignature" header="Position"></Column>
-            <Column field="ToLocation" header="Rutt">
+            <template #header>
+                <div class="flex flex-wrap justify-content-end flex gap-2">
+                    <Button text icon="pi pi-plus" label="Öppna Alla" @click="expandAll"></Button>
+                    <Button
+                        text
+                        icon="pi pi-minus"
+                        label="Stäng Alla"
+                        @click="collapseAll"
+                    ></Button>
+                </div>
+            </template>
+            <Column expander style="width: 5rem" />
+            <Column field="id" header="Tåg" />
+            <Column header="Sträcka">
                 <template #body="{ data }">
-                    <span>{{
-                        data.FromLocation ? data.FromLocation[0].LocationName + "->" : ""
-                    }}</span>
-                    <span>{{ data.ToLocation ? data.ToLocation[0].LocationName : "" }}</span>
+                    <span>{{ data?.fromStation?.AdvertisedLocationName }}</span>
+                    <span> - </span>
+                    <span>{{ data?.toStation?.AdvertisedLocationName }}</span>
                 </template>
             </Column>
-            <Column field="AdvertisedTimeAtLocation" header="Försening">
-                <template #body="{ data }">
-                    <span>
-                        {{
-                            new Date(
-                                new Date(data.EstimatedTimeAtLocation).getTime() -
-                                    new Date(data.AdvertisedTimeAtLocation).getTime()
-                            ).getMinutes()
-                        }}
-                        minuter
-                    </span>
-                </template>
-            </Column>
-            <Column>
+            <Column headerStyle="width:4rem">
                 <template #body="{ data }">
                     <Button
-                        label=""
                         icon="pi pi-plus"
-                        class="p-button-rounded p-button-success p-button-sm"
+                        severity="info"
+                        text
+                        rounded
+                        aria-label="Nytt Ärende"
                         @click="
                             () => {
                                 dialogData = data;
                                 dialogVisible = true;
                             }
                         "
-                    />
+                    ></Button>
                 </template>
             </Column>
+            <template #expansion="slotProps">
+                <div class="p-3">
+                    <div class="flex flex-wrap justify-content-between flex gap-2">
+                        <h5>Förseningar för tåg {{ slotProps.data.id }}</h5>
+                    </div>
+                    <DataTable
+                        :value="slotProps.data.data"
+                        dataKey="slotProps.data.delays.ActivityId"
+                        sortField="slotProps.data.delays.AdvertisedTimeAtLocation"
+                        :sortOrder="-1"
+                    >
+                        <Column header="Station">
+                            <template #body="{ data }">
+                                <span>{{
+                                    data.Station
+                                        ? data.Station.AdvertisedLocationName
+                                        : data.LocationSignature
+                                }}</span>
+                            </template>
+                        </Column>
+                        <Column header="Beräknad avgång">
+                            <template #body="{ data }">
+                                <span class="line-through">{{
+                                    new Date(data.AdvertisedTimeAtLocation).toLocaleTimeString(
+                                        "sv-SE"
+                                    )
+                                }}</span>
+                                <span>&nbsp;</span>
+                                <span class="font-bold">{{
+                                    new Date(data.EstimatedTimeAtLocation).toLocaleTimeString(
+                                        "sv-SE"
+                                    )
+                                }}</span>
+                            </template>
+                        </Column>
+                        <Column header="Försening">
+                            <template #body="{ data }">
+                                <span>
+                                    {{
+                                        new Date(
+                                            new Date(data.EstimatedTimeAtLocation).getTime() -
+                                                new Date(data.AdvertisedTimeAtLocation).getTime()
+                                        ).getMinutes()
+                                    }}
+                                    minuter
+                                </span>
+                            </template>
+                        </Column>
+                        <Column header="Status" headerStyle="width:4rem">
+                            <template #body="slotProps">
+                                <Tag
+                                    :value="slotProps.data.Cancelled ? 'Inställt' : 'Försenat'"
+                                    :severity="slotProps.data.Cancelled ? 'danger' : 'warning'"
+                                />
+                            </template>
+                        </Column>
+                    </DataTable>
+                </div>
+            </template>
         </DataTable>
+
         <!-- leaflet map-->
         <MapComponent class="w-7" />
     </div>
@@ -100,20 +241,8 @@ onMounted(async () => {
                         label="Skapa ärende"
                         class="p-button-rounded p-button-success p-button-sm"
                         :loading="addLoading"
-                        @click="
-                            async () => {
-                                const request = {
-                                    code: selectedTicketCode?.Code as string,
-                                    traindate: new Date(),
-                                    trainnumber: dialogData?.OperationalTrainNumber as string
-                                };
-                                addLoading = true;
-                                await TrainService.createTicket(request);
-                                addLoading = false;
-                                dialogVisible = false;
-                            }
-                        "
-                    />
+                        @click="createTicket"
+                    ></Button>
                 </div>
             </div>
         </div>

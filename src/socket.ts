@@ -7,7 +7,6 @@ export const state = reactive({
 });
 
 export const socket = io(import.meta.env.VITE_API_URL, {
-    autoConnect: false,
     // send token on connection
     auth: (cb) => {
         cb({

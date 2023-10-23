@@ -21,6 +21,7 @@ import InputNumber from "primevue/inputnumber";
 import Toast from "primevue/toast";
 import Card from "primevue/card";
 import ConfirmDialog from "primevue/confirmdialog";
+import Tag from "primevue/tag";
 
 createApp(App)
     .use(PrimeVue)
@@ -42,4 +43,5 @@ createApp(App)
     .component("InputNumber", InputNumber)
     .component("Toast", Toast)
     .component("Card", Card)
+    .component("Tag", Tag)
     .mount("#app");

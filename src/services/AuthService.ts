@@ -1,7 +1,7 @@
 import type { LoginResult } from "./../models/LoginResult.model";
 import axios from "axios";
 import type { RegisterUser } from "@/models/RegisterUser.model";
-import { socket } from "@/socket";
+import { socket, state } from "@/socket";
 
 export default {
     async login(username: string, password: string): Promise<LoginResult> {
@@ -92,7 +92,9 @@ export default {
         if (response.data.data.login.ok) {
             const token = response.data.data.login.data.token;
             sessionStorage.setItem("x-access-token", token);
-            socket.connect();
+            if (state.connected === false) {
+                socket.connect();
+            }
             return {
                 success: true,
                 title: "Login successful",
@@ -150,6 +152,8 @@ export default {
     },
     logout() {
         sessionStorage.removeItem("x-access-token");
-        socket.disconnect();
+        if (state.connected === true) {
+            socket.disconnect();
+        }
     }
 };
