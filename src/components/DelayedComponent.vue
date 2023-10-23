@@ -38,8 +38,12 @@ const collapseAll = () => {
     expandedRows.value = null;
 };
 
-const getStationBySignature = (signature: string) => {
-    return trainStations.value.find((station) => station.LocationSignature === signature);
+const getStationBySignature = (signature: string): TrainStation | null => {
+    return (
+        trainStations.value.find(
+            (station: TrainStation) => station.LocationSignature === signature
+        ) || null
+    );
 };
 
 onMounted(async () => {
@@ -55,8 +59,8 @@ onMounted(async () => {
     // acc is the accumulator, the object we are building
     const data = delays.reduce((acc: { [key: string]: TrainDelayGroup }, delay: TrainDelay) => {
         if (!acc[delay.OperationalTrainNumber]) {
-            let fromStation = null;
-            let toStation = null;
+            let fromStation: TrainStation | null;
+            let toStation: TrainStation | null;
 
             if (delay.FromLocation?.length > 0) {
                 fromStation = getStationBySignature(delay.FromLocation[0].LocationName);

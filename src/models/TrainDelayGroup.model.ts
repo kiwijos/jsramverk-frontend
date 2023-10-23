@@ -3,7 +3,7 @@ import type { TrainStation } from "./TrainStation.model";
 
 export interface TrainDelayGroup {
     id: string;
-    fromStation: TrainStation;
-    toStation: TrainStation;
+    fromStation: TrainStation | null;
+    toStation: TrainStation | null;
     data: TrainDelayWithStationDto[];
 }
