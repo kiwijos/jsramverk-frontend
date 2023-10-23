@@ -69,6 +69,17 @@ const getStationBySignature = (signature: string): TrainStation | null => {
     );
 };
 
+const updateTable = (trainNumber: string) => {
+    // Clear all other filters
+    filters.value["fromStation.AdvertisedLocationName"].value = null;
+    filters.value["toStation.AdvertisedLocationName"].value = null;
+
+    // Update the table filter to only show the train with the given train number
+    // (only show exact matches)
+    YOUR_FILTER.value = FilterMatchMode.EXACT;
+    filters.value.id.value = trainNumber;
+};
+
 onMounted(async () => {
     addLoading.value = true;
 
@@ -290,7 +301,7 @@ onMounted(async () => {
         </DataTable>
 
         <!-- leaflet map-->
-        <MapComponent class="w-7" />
+        <MapComponent @opened-popup="updateTable" class="w-7" />
     </div>
     <Dialog v-model:visible="dialogVisible" class="w-6">
         <div class="h-22rem">
