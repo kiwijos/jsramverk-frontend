@@ -4,7 +4,7 @@
     </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import type { Train } from "@/models/Train.model";
 import * as Libre from "maplibre-gl";
 import { shallowRef, onMounted, onUnmounted, markRaw, type Raw, ref } from "vue";
@@ -12,63 +12,55 @@ import { socket } from "@/socket";
 
 const trainMarkers = ref(new Map<string, Libre.Marker>());
 
-export default {
-    name: "MapComponent",
-    setup() {
-        const mapContainer = shallowRef<string | HTMLElement | null>(null);
-        const map = shallowRef<Raw<Libre.Map> | null>(null);
-        onMounted(() => {
-            const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
+const mapContainer = shallowRef<string | HTMLElement | null>(null);
+const map = shallowRef<Raw<Libre.Map> | null>(null);
 
-            const initialState = { lng: 15.704, lat: 58.553, zoom: 5 };
+onMounted(() => {
+    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
 
-            map.value = markRaw(
-                new Libre.Map({
-                    container: mapContainer.value as HTMLElement | string,
-                    style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}`,
-                    center: [initialState.lng, initialState.lat],
-                    zoom: initialState.zoom
-                })
-            );
-            openSocket();
-        });
-        onUnmounted(() => {
-            map.value?.remove();
-        });
+    const initialState = { lng: 15.704, lat: 58.553, zoom: 5 };
 
-        return {
-            map,
-            mapContainer
-        };
+    map.value = markRaw(
+        new Libre.Map({
+            container: mapContainer.value as HTMLElement | string,
+            style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}`,
+            center: [initialState.lng, initialState.lat],
+            zoom: initialState.zoom
+        })
+    );
+    openSocket();
+});
 
-        function openSocket() {
-            socket.on("message", (data: Train) => {
-                // add and update train markers
-                const train = trainMarkers.value.get(data.trainnumber);
-                if (train) {
-                    train.setLngLat([data.position[1], data.position[0]]);
-                } else {
-                    const marker = new Libre.Marker({ color: "red" })
-                        .setLngLat([data.position[1], data.position[0]])
-                        .setPopup(
-                            new Libre.Popup({ offset: 25 }) // add popups
-                                .setHTML(
-                                    `
-                                    <h3>Tåg: ${data.trainnumber}</h3>
-                                    <p>${data.speed ?? 0} km/h</p>
-                                    <p>
-                                    ${data.position[0].toFixed(4)}, ${data.position[1].toFixed(4)}
-                                    </p>
-                                    `
-                                )
+onUnmounted(() => {
+    map.value?.remove();
+});
+
+function openSocket() {
+    socket.on("message", (data: Train) => {
+        // add and update train markers
+        const train = trainMarkers.value.get(data.trainnumber);
+        if (train) {
+            train.setLngLat([data.position[1], data.position[0]]);
+        } else {
+            const marker = new Libre.Marker({ color: "red" })
+                .setLngLat([data.position[1], data.position[0]])
+                .setPopup(
+                    new Libre.Popup({ offset: 25 }) // add popups
+                        .setHTML(
+                            `
+                            <h3>Tåg: ${data.trainnumber}</h3>
+                            <p>${data.speed ?? 0} km/h</p>
+                            <p>
+                            ${data.position[0].toFixed(4)}, ${data.position[1].toFixed(4)}
+                            </p>
+                            `
                         )
-                        .addTo(map.value as Libre.Map);
-                    trainMarkers.value.set(data.trainnumber, marker);
-                }
-            });
+                )
+                .addTo(map.value as Libre.Map);
+            trainMarkers.value.set(data.trainnumber, marker);
         }
-    }
-};
+    });
+}
 </script>
 
 <style scoped>
