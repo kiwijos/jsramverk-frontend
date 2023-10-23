@@ -4,12 +4,37 @@ import type { TrainDelay } from "@/models/TrainDelay.model";
 import type { TicketCreateDto } from "@/models/TicketCreateDto.model";
 import type { TicketUpdateDto } from "@/models/TicketUpdateDto.model";
 import type { TicketResponse } from "@/models/TicketResponse.model";
+import type { TrainStation } from "@/models/TrainStation.model";
 import axios from "axios";
 
+const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
+
 export default {
-    async getDelayedTrains(): Promise<TrainDelay[]> {
+    async getTrainStations(): Promise<TrainStation[]> {
         const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
 
+        const graphqlQuery = {
+            query: `query {
+                trainStations {
+                    ok error data {
+                        AdvertisedLocationName
+                        LocationSignature
+                        Longitude
+                        Latitude
+                    }
+                }
+            }`
+        };
+
+        const response = await axios({
+            url: graphqlEndpoint,
+            method: "post",
+            data: graphqlQuery
+        });
+
+        return response.data.data.trainStations.data;
+    },
+    async getDelayedTrains(): Promise<TrainDelay[]> {
         const graphqlQuery = {
             query: `query delays {
                 trainDelays {
@@ -41,8 +66,6 @@ export default {
         return response.data.data.trainDelays.data;
     },
     async getTickets(): Promise<Ticket[]> {
-        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
-
         const graphqlQuery = {
             query: `query {
                 tickets { 
@@ -63,8 +86,6 @@ export default {
         return response.data.data.tickets;
     },
     async getTicketById(request: { id: string }): Promise<Ticket> {
-        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
-
         const graphqlQuery = {
             query: `query (
                 $id: ID!
@@ -88,8 +109,6 @@ export default {
         return response.data.data.ticket;
     },
     async getTicketCodes(): Promise<TicketCode[]> {
-        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
-
         const graphqlQuery = {
             query: `
             query {
@@ -114,8 +133,6 @@ export default {
         return response.data.data.ticketCodes.data;
     },
     async createTicket(request: TicketCreateDto): Promise<Ticket> {
-        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
-
         const graphqlQuery = {
             query: `mutation (
                 $code: String!,
@@ -154,8 +171,6 @@ export default {
         return response.data.data.createTicket.data;
     },
     async updateTicket(request: TicketUpdateDto): Promise<TicketResponse> {
-        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
-
         const graphqlQuery = {
             query: `mutation (
                 $id: ID!,
@@ -197,8 +212,6 @@ export default {
         return response.data.data.updateTicket;
     },
     async deleteTicket(request: { id: string }): Promise<TicketResponse> {
-        const graphqlEndpoint = `${import.meta.env.VITE_API_URL}/graphql`;
-
         const graphqlQuery = {
             query: `mutation (
                 $id: ID!,
