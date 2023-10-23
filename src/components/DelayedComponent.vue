@@ -75,8 +75,10 @@ const updateTable = (trainNumber: string) => {
     filters.value["toStation.AdvertisedLocationName"].value = null;
 
     // Update the table filter to only show the train with the given train number
-    // (only show exact matches)
+    // (This is a bit hacky, but it works)
+    // @ts-ignore
     YOUR_FILTER.value = FilterMatchMode.EXACT;
+    // @ts-ignore
     filters.value.id.value = trainNumber;
 };
 
