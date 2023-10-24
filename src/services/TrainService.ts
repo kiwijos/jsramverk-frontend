@@ -168,7 +168,7 @@ export default {
             }
         });
 
-        return response.data.data.createTicket.data;
+        return response.data.data.createTicket;
     },
     async updateTicket(request: TicketUpdateDto): Promise<TicketResponse> {
         const graphqlQuery = {
