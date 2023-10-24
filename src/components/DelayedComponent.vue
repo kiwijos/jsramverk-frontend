@@ -22,7 +22,7 @@ const selectedRoute: Ref<TrainRoute | null> = ref(null);
 const trainStations: Ref<TrainStation[]> = ref([]);
 const delayedTrains: Ref<TrainDelayGroup[]> = ref([]);
 const dialogVisible: Ref<boolean> = ref(false);
-const dialogData: Ref<TrainDelay | null> = ref(null);
+const dialogData: Ref<TrainDelayGroup | null> = ref(null);
 const ticketCodes: Ref<TicketCode[]> = ref([]);
 const selectedTicketCode: Ref<TicketCode | null> = ref(null);
 const addLoading: Ref<boolean> = ref(false);
@@ -371,7 +371,7 @@ onMounted(async () => {
             <h2 class="p-0">Registrera nytt ärende</h2>
             <Divider />
             <div class="flex flex-column gap-3 align-items-center" v-if="dialogData">
-                <h3 class="p-0">Tågnummer: {{ dialogData?.OperationalTrainNumber }}</h3>
+                <h3 class="p-0">Tågnummer: {{ dialogData?.id }}</h3>
                 <div class="w-5 flex flex-column gap-3">
                     <h3>Orsakskod</h3>
                     <Dropdown
