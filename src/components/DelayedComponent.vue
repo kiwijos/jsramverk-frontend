@@ -2,6 +2,9 @@
 import { ref, onMounted } from "vue";
 import type { Ref } from "vue";
 import { FilterMatchMode, FilterService } from "primevue/api";
+import { useToast } from "primevue/usetoast";
+
+import { socket } from "@/socket";
 
 import type { TrainDelay } from "@/models/TrainDelay.model";
 import TrainService from "@/services/TrainService";
@@ -11,7 +14,11 @@ import type { TrainDelayWithStationDto } from "@/models/TrainDelayWithStationDto
 import type { TrainDelayGroup } from "@/models/TrainDelayGroup.model";
 import type { TrainRoute } from "@/models/TrainRoute.model";
 
+const toast = useToast();
+
+// Route to display on the map
 const selectedRoute: Ref<TrainRoute | null> = ref(null);
+
 const trainStations: Ref<TrainStation[]> = ref([]);
 const delayedTrains: Ref<TrainDelayGroup[]> = ref([]);
 const dialogVisible: Ref<boolean> = ref(false);
@@ -19,6 +26,9 @@ const dialogData: Ref<TrainDelay | null> = ref(null);
 const ticketCodes: Ref<TicketCode[]> = ref([]);
 const selectedTicketCode: Ref<TicketCode | null> = ref(null);
 const addLoading: Ref<boolean> = ref(false);
+
+// This could be just a sub-set of delayedTrains, or all of them, or none of them
+const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
 
 const YOUR_FILTER = ref("YOUR FILTER");
 
@@ -41,19 +51,36 @@ const matchModeOptions = ref([
     { label: "Slutar på", value: FilterMatchMode.ENDS_WITH }
 ]);
 
-// This could be just a sub-set of delayedTrains, or all of them, or none of them
-const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
-
 const createTicket = async () => {
     const request = {
         code: selectedTicketCode.value?.Code as string,
         traindate: new Date(),
-        trainnumber: dialogData.value?.OperationalTrainNumber as string
+        trainnumber: dialogData.value?.id as string
     };
+
     addLoading.value = true;
-    await TrainService.createTicket(request);
-    addLoading.value = false;
+
+    const ticket = await TrainService.createTicket(request);
+
+    if (ticket.ok === false) {
+        toast.add({
+            severity: "error",
+            summary: "Ett fel uppstod",
+            detail: ticket.error,
+            life: 3000
+        });
+    } else {
+        socket.emit("create", ticket.data.id);
+        toast.add({
+            severity: "success",
+            summary: "Ärende skapat",
+            detail: ticket.data.id,
+            life: 3000
+        });
+    }
     dialogVisible.value = false;
+    dialogData.value = null;
+    addLoading.value = false;
 };
 
 const expandAll = () => {
@@ -181,7 +208,7 @@ onMounted(async () => {
             v-model:filters="filters"
             filterDisplay="row"
         >
-            <template #loading> Laddar in de senaste förseningarna. Vänligen vänta. </template>
+            <template #loading> Laddar ändringar... </template>
             <template #header>
                 <div class="flex flex-wrap justify-content-end flex gap-2">
                     <Button text icon="pi pi-plus" label="Öppna Alla" @click="expandAll"></Button>
@@ -338,6 +365,7 @@ onMounted(async () => {
         <!-- leaflet map-->
         <MapComponent @opened-popup="updateTable" class="w-7" :route="selectedRoute" />
     </div>
+    <Toast />
     <Dialog v-model:visible="dialogVisible" class="w-6">
         <div class="h-22rem">
             <h2 class="p-0">Registrera nytt ärende</h2>
