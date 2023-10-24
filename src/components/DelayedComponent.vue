@@ -84,20 +84,20 @@ const updateTable = (trainNumber: string) => {
     filters.value.id.value = trainNumber;
 };
 
-const selectRoute = (Trainroute: TrainDelayGroup) => {
-    if (selectedRoute.value?.id === Trainroute.id) {
+const selectRoute = (route: TrainDelayGroup) => {
+    if (selectedRoute.value?.id === route.id) {
         selectedRoute.value = null;
         return;
     }
 
-    // loop through all the delays for this Trainroute and keep only the Station for each delay
+    // loop through all the delays for this route and keep only the Station for each delay
     // (we don't need the full delay object)
-    const stations: TrainStation[] = Trainroute.data.map((delay) => delay.Station);
+    let stations: TrainStation[] = route.data.map((delay) => delay.Station as TrainStation);
 
     selectedRoute.value = {
-        id: Trainroute.id,
-        fromStation: Trainroute.fromStation,
-        toStation: Trainroute.toStation,
+        id: route.id,
+        fromStation: route.fromStation,
+        toStation: route.toStation,
         viaStations: stations
     };
 };
