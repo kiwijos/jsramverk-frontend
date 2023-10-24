@@ -10,6 +10,14 @@ import * as Libre from "maplibre-gl";
 import { shallowRef, onMounted, onUnmounted, markRaw, type Raw, ref } from "vue";
 import { socket } from "@/socket";
 
+const emit = defineEmits<{
+    (e: "openedPopup", value: string): void;
+}>();
+
+function openedPopup(value: string) {
+    emit("openedPopup", value);
+}
+
 const trainMarkers = ref(new Map<string, Libre.Marker>());
 
 const mapContainer = shallowRef<string | HTMLElement | null>(null);
@@ -28,6 +36,7 @@ onMounted(() => {
             zoom: initialState.zoom
         })
     );
+
     openSocket();
 });
 
@@ -37,7 +46,7 @@ onUnmounted(() => {
 
 function openSocket() {
     socket.on("message", (data: Train) => {
-        // add and update train markers
+        // add and openedPopup train markers
         const train = trainMarkers.value.get(data.trainnumber);
         if (train) {
             train.setLngLat([data.position[1], data.position[0]]);
@@ -55,8 +64,12 @@ function openSocket() {
                             </p>
                             `
                         )
+                        .on("open", () => {
+                            openedPopup(data.trainnumber);
+                        })
                 )
                 .addTo(map.value as Libre.Map);
+
             trainMarkers.value.set(data.trainnumber, marker);
         }
     });

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import type { Ref } from "vue";
+import { FilterMatchMode, FilterService } from "primevue/api";
+
 import type { TrainDelay } from "@/models/TrainDelay.model";
 import TrainService from "@/services/TrainService";
 import type { TicketCode } from "@/models/TicketCode.model";
@@ -15,6 +17,27 @@ const dialogData: Ref<TrainDelay | null> = ref(null);
 const ticketCodes: Ref<TicketCode[]> = ref([]);
 const selectedTicketCode: Ref<TicketCode | null> = ref(null);
 const addLoading: Ref<boolean> = ref(false);
+
+const YOUR_FILTER = ref("YOUR FILTER");
+
+const filters = ref({
+    id: { value: null, matchMode: YOUR_FILTER.value },
+    "fromStation.AdvertisedLocationName": {
+        value: null,
+        matchMode: YOUR_FILTER.value
+    },
+    "toStation.AdvertisedLocationName": {
+        value: null,
+        matchMode: YOUR_FILTER.value
+    }
+});
+
+const matchModeOptions = ref([
+    { label: "Exakt", value: YOUR_FILTER.value },
+    { label: "Börjar på", value: FilterMatchMode.STARTS_WITH },
+    { label: "Innehåller", value: FilterMatchMode.CONTAINS },
+    { label: "Slutar på", value: FilterMatchMode.ENDS_WITH }
+]);
 
 // This could be just a sub-set of delayedTrains, or all of them, or none of them
 const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
@@ -46,8 +69,33 @@ const getStationBySignature = (signature: string): TrainStation | null => {
     );
 };
 
+const updateTable = (trainNumber: string) => {
+    // Clear all other filters
+    filters.value["fromStation.AdvertisedLocationName"].value = null;
+    filters.value["toStation.AdvertisedLocationName"].value = null;
+
+    // Update the table filter to only show the train with the given train number
+    // (This is a bit hacky, but it works)
+    // @ts-ignore
+    YOUR_FILTER.value = FilterMatchMode.EXACT;
+    // @ts-ignore
+    filters.value.id.value = trainNumber;
+};
+
 onMounted(async () => {
     addLoading.value = true;
+
+    FilterService.register(YOUR_FILTER.value, (value, filter) => {
+        if (filter === undefined || filter === null || filter.trim() === "") {
+            return true;
+        }
+
+        if (value === undefined || value === null) {
+            return false;
+        }
+
+        return value.toString() === filter.toString();
+    });
 
     trainStations.value = await TrainService.getTrainStations();
 
@@ -106,12 +154,14 @@ onMounted(async () => {
             dataKey="id"
             tableStyle="min-width: 40rem"
             paginator
-            :first="0"
             :rows="10"
             :rowsPerPageOptions="[5, 10, 25]"
             :loading="addLoading"
             :stripedRows="true"
+            v-model:filters="filters"
+            filterDisplay="row"
         >
+            <template #loading> Laddar in de senaste förseningarna. Vänligen vänta. </template>
             <template #header>
                 <div class="flex flex-wrap justify-content-end flex gap-2">
                     <Button text icon="pi pi-plus" label="Öppna Alla" @click="expandAll"></Button>
@@ -124,12 +174,54 @@ onMounted(async () => {
                 </div>
             </template>
             <Column expander style="width: 5rem" />
-            <Column field="id" header="Tåg" />
-            <Column header="Sträcka">
+            <Column field="id" header="Tåg" :filterMatchModeOptions="matchModeOptions">
+                <template #body="{ data }">
+                    <span>{{ data?.id }}</span>
+                </template>
+                <template #filter="{ filterModel, filterCallback }">
+                    <InputText
+                        v-model="filterModel.value"
+                        type="text"
+                        @input="filterCallback()"
+                        class="p-column-filter"
+                        placeholder="Sök..."
+                    />
+                </template>
+            </Column>
+            <Column
+                header="Från"
+                filterField="fromStation.AdvertisedLocationName"
+                :filterMatchModeOptions="matchModeOptions"
+            >
                 <template #body="{ data }">
                     <span>{{ data?.fromStation?.AdvertisedLocationName }}</span>
-                    <span> - </span>
+                </template>
+                <template #filter="{ filterModel, filterCallback }">
+                    <InputText
+                        v-model="filterModel.value"
+                        type="text"
+                        @input="filterCallback()"
+                        class="p-column-filter"
+                        placeholder="Sök..."
+                    />
+                </template>
+            </Column>
+            <Column
+                header="Till"
+                filterField="toStation.AdvertisedLocationName"
+                :filterMatchModeOptions="matchModeOptions"
+            >
+                <template #body="{ data }">
                     <span>{{ data?.toStation?.AdvertisedLocationName }}</span>
+                </template>
+                <template #filter="{ filterModel, filterCallback }">
+                    <InputText
+                        v-model="filterModel.value"
+                        type="text"
+                        @input="filterCallback()"
+                        class="p-column-filter"
+                        placeholder="Sök..."
+                    />
                 </template>
             </Column>
             <Column headerStyle="width:4rem">
@@ -211,7 +303,7 @@ onMounted(async () => {
         </DataTable>
 
         <!-- leaflet map-->
-        <MapComponent class="w-7" />
+        <MapComponent @opened-popup="updateTable" class="w-7" />
     </div>
     <Dialog v-model:visible="dialogVisible" class="w-6">
         <div class="h-22rem">
