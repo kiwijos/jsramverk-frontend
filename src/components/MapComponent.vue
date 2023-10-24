@@ -7,8 +7,46 @@
 <script setup lang="ts">
 import type { Train } from "@/models/Train.model";
 import * as Libre from "maplibre-gl";
-import { shallowRef, onMounted, onUnmounted, markRaw, type Raw, ref } from "vue";
+import { shallowRef, onMounted, onUnmounted, markRaw, watch, type Raw, ref } from "vue";
 import { socket } from "@/socket";
+
+import type { TrainRoute } from "@/models/TrainRoute.model";
+
+const props = defineProps<{
+    route?: TrainRoute | null;
+}>();
+
+watch(
+    () => props.route,
+    (newRoute, oldRoute) => {
+        // This should not happen as we are setting the route object to null on consecutive clicks,
+        // but if it does, we don't want to do anything
+        if (newRoute?.id === oldRoute?.id) {
+            return;
+        }
+
+        if (newRoute === null || newRoute === undefined) {
+            // loop through all markers and unhide them
+            trainMarkers.value.forEach((marker) => {
+                marker.removeClassName("hidden");
+            });
+        } else {
+            // loop through all markers and hide them
+            // except the one that matches the selected route id
+            trainMarkers.value.forEach((marker, key) => {
+                if (key === newRoute.id) {
+                    marker.removeClassName("hidden");
+                } else {
+                    // close popup if open
+                    if (marker.getPopup()?.isOpen()) {
+                        marker.getPopup()?.remove();
+                    }
+                    marker.addClassName("hidden");
+                }
+            });
+        }
+    }
+);
 
 const emit = defineEmits<{
     (e: "openedPopup", value: string): void;
@@ -70,6 +108,16 @@ function openSocket() {
                 )
                 .addTo(map.value as Libre.Map);
 
+            if (props.route === null || props.route === undefined) {
+                marker.removeClassName("hidden");
+            } else {
+                if (data.trainnumber === props.route.id) {
+                    marker.removeClassName("hidden");
+                } else {
+                    marker.addClassName("hidden");
+                }
+            }
+
             trainMarkers.value.set(data.trainnumber, marker);
         }
     });
@@ -94,5 +142,9 @@ function openSocket() {
     left: 10px;
     bottom: 10px;
     z-index: 999;
+}
+
+.hidden {
+    opacity: 0;
 }
 </style>

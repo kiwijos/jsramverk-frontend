@@ -9,7 +9,9 @@ import type { TicketCode } from "@/models/TicketCode.model";
 import type { TrainStation } from "@/models/TrainStation.model";
 import type { TrainDelayWithStationDto } from "@/models/TrainDelayWithStationDto.model";
 import type { TrainDelayGroup } from "@/models/TrainDelayGroup.model";
+import type { TrainRoute } from "@/models/TrainRoute.model";
 
+const selectedRoute: Ref<TrainRoute | null> = ref(null);
 const trainStations: Ref<TrainStation[]> = ref([]);
 const delayedTrains: Ref<TrainDelayGroup[]> = ref([]);
 const dialogVisible: Ref<boolean> = ref(false);
@@ -80,6 +82,24 @@ const updateTable = (trainNumber: string) => {
     YOUR_FILTER.value = FilterMatchMode.EXACT;
     // @ts-ignore
     filters.value.id.value = trainNumber;
+};
+
+const selectRoute = (Trainroute: TrainDelayGroup) => {
+    if (selectedRoute.value?.id === Trainroute.id) {
+        selectedRoute.value = null;
+        return;
+    }
+
+    // loop through all the delays for this Trainroute and keep only the Station for each delay
+    // (we don't need the full delay object)
+    const stations: TrainStation[] = Trainroute.data.map((delay) => delay.Station);
+
+    selectedRoute.value = {
+        id: Trainroute.id,
+        fromStation: Trainroute.fromStation,
+        toStation: Trainroute.toStation,
+        viaStations: stations
+    };
 };
 
 onMounted(async () => {
@@ -245,6 +265,19 @@ onMounted(async () => {
                 <div class="p-3">
                     <div class="flex flex-wrap justify-content-between flex gap-2">
                         <h5>Förseningar för tåg {{ slotProps.data.id }}</h5>
+                        <Button
+                            text
+                            :icon="
+                                selectedRoute?.id === slotProps.data.id
+                                    ? 'pi pi-times'
+                                    : 'pi pi-map'
+                            "
+                            :severity="selectedRoute?.id === slotProps.data.id ? 'danger' : 'info'"
+                            :label="
+                                selectedRoute?.id === slotProps.data.id ? 'Stäng' : 'Visa Sträcka'
+                            "
+                            @click="selectRoute(slotProps.data)"
+                        ></Button>
                     </div>
                     <DataTable
                         :value="slotProps.data.data"
@@ -303,7 +336,7 @@ onMounted(async () => {
         </DataTable>
 
         <!-- leaflet map-->
-        <MapComponent @opened-popup="updateTable" class="w-7" />
+        <MapComponent @opened-popup="updateTable" class="w-7" :route="selectedRoute" />
     </div>
     <Dialog v-model:visible="dialogVisible" class="w-6">
         <div class="h-22rem">
