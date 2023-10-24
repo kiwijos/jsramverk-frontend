@@ -33,7 +33,8 @@ test("TrainService create ticket", async () => {
         trainnumber: "123",
         traindate: date
     });
-    expect(ticket.code).equals("ABC123");
-    expect(ticket.trainnumber).equals("123");
-    expect(ticket.traindate).equals(date.toISOString());
+    expect(ticket.ok).equals(true);
+    expect(ticket.data.code).equals("ABC123");
+    expect(ticket.data.trainnumber).equals("123");
+    expect(ticket.data.traindate).equals(date.toISOString());
 });
