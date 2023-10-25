@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import type { Ref } from "vue";
 import { FilterMatchMode, FilterService } from "primevue/api";
+import { useToast } from "primevue/usetoast";
+
+import { socket } from "@/socket";
 
 import type { TrainDelay } from "@/models/TrainDelay.model";
 import TrainService from "@/services/TrainService";
@@ -9,24 +12,66 @@ import type { TicketCode } from "@/models/TicketCode.model";
 import type { TrainStation } from "@/models/TrainStation.model";
 import type { TrainDelayWithStationDto } from "@/models/TrainDelayWithStationDto.model";
 import type { TrainDelayGroup } from "@/models/TrainDelayGroup.model";
+import type { TrainRoute } from "@/models/TrainRoute.model";
+
+const toast = useToast();
+
+// Route to display on the map
+const selectedRoute: Ref<TrainRoute | null> = ref(null);
 
 const trainStations: Ref<TrainStation[]> = ref([]);
 const delayedTrains: Ref<TrainDelayGroup[]> = ref([]);
 const dialogVisible: Ref<boolean> = ref(false);
-const dialogData: Ref<TrainDelay | null> = ref(null);
+const dialogData: Ref<TrainDelayGroup | null> = ref(null);
 const ticketCodes: Ref<TicketCode[]> = ref([]);
 const selectedTicketCode: Ref<TicketCode | null> = ref(null);
 const addLoading: Ref<boolean> = ref(false);
+const ticketLockedByOther: Ref<boolean> = ref(false);
+
+// This could be just a sub-set of delayedTrains, or all of them, or none of them
+const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
+
+// When dialogData changes, this most likely means that the user has selected a train to create a ticket for
+// This is a good time to lock the train so that no other user can create a ticket for it at the same time
+watch(dialogData, (newData, oldData) => {
+    // If the user has selected a train, lock it
+    if (newData?.OperationalTrainNumber) {
+        socket.emit("lockTicket", newData.OperationalTrainNumber);
+    }
+    // If the user has closed the dialog, unlock the train
+    if (oldData?.OperationalTrainNumber) {
+        socket.emit("unlockTicket", oldData.OperationalTrainNumber);
+    }
+});
+
+// Cofirmation that the train has been locked
+socket.on("ticketLockedByMe", () => {
+    ticketLockedByOther.value = false;
+});
+
+// Message that the train has already been locked by another user
+socket.on("ticketLockedByOther", (id: string) => {
+    if (dialogData.value?.OperationalTrainNumber !== id) {
+        return;
+    }
+
+    ticketLockedByOther.value = true;
+});
+
+// Make sure that the dialog data is cleared when the dialog is closed
+const handleClose = () => {
+    dialogData.value = null;
+};
 
 const YOUR_FILTER = ref("YOUR FILTER");
 
 const filters = ref({
-    id: { value: null, matchMode: YOUR_FILTER.value },
-    "fromStation.AdvertisedLocationName": {
+    OperationalTrainNumber: { value: null, matchMode: YOUR_FILTER.value },
+    "FromStation.AdvertisedLocationName": {
         value: null,
         matchMode: YOUR_FILTER.value
     },
-    "toStation.AdvertisedLocationName": {
+    "ToStation.AdvertisedLocationName": {
         value: null,
         matchMode: YOUR_FILTER.value
     }
@@ -39,23 +84,40 @@ const matchModeOptions = ref([
     { label: "Slutar på", value: FilterMatchMode.ENDS_WITH }
 ]);
 
-// This could be just a sub-set of delayedTrains, or all of them, or none of them
-const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
-
 const createTicket = async () => {
     const request = {
         code: selectedTicketCode.value?.Code as string,
         traindate: new Date(),
         trainnumber: dialogData.value?.OperationalTrainNumber as string
     };
+
     addLoading.value = true;
-    await TrainService.createTicket(request);
-    addLoading.value = false;
+
+    const ticket = await TrainService.createTicket(request);
+
+    if (ticket.ok === false) {
+        toast.add({
+            severity: "error",
+            summary: "Ett fel uppstod",
+            detail: ticket.error,
+            life: 3000
+        });
+    } else {
+        socket.emit("create", ticket.data.id);
+        toast.add({
+            severity: "success",
+            summary: "Ärende skapat",
+            detail: ticket.data.id,
+            life: 3000
+        });
+    }
     dialogVisible.value = false;
+    dialogData.value = null;
+    addLoading.value = false;
 };
 
 const expandAll = () => {
-    expandedRows.value = delayedTrains.value.filter((delay) => delay.id);
+    expandedRows.value = delayedTrains.value.filter((delay) => delay.OperationalTrainNumber);
 };
 const collapseAll = () => {
     expandedRows.value = null;
@@ -71,16 +133,40 @@ const getStationBySignature = (signature: string): TrainStation | null => {
 
 const updateTable = (trainNumber: string) => {
     // Clear all other filters
-    filters.value["fromStation.AdvertisedLocationName"].value = null;
-    filters.value["toStation.AdvertisedLocationName"].value = null;
+    filters.value["FromStation.AdvertisedLocationName"].value = null;
+    filters.value["ToStation.AdvertisedLocationName"].value = null;
 
     // Update the table filter to only show the train with the given train number
     // (This is a bit hacky, but it works)
     // @ts-ignore
     YOUR_FILTER.value = FilterMatchMode.EXACT;
     // @ts-ignore
-    filters.value.id.value = trainNumber;
+    filters.value.OperationalTrainNumber.value = trainNumber;
 };
+
+const selectRoute = (route: TrainDelayGroup) => {
+    if (selectedRoute.value?.OperationalTrainNumber === route.OperationalTrainNumber) {
+        selectedRoute.value = null;
+        return;
+    }
+
+    // loop through all the delays for this route and keep only the Station for each delay
+    // (we don't need the full delay object)
+    let stations: TrainStation[] = route.Data.map((delay) => delay.Station as TrainStation);
+
+    selectedRoute.value = {
+        OperationalTrainNumber: route.OperationalTrainNumber,
+        FromStation: route.FromStation,
+        ToStation: route.ToStation,
+        ViaStations: stations
+    };
+};
+
+// Doubly make sure that the dialog data is cleared when the component is unmounted
+// (like when the user navigates away from the page)
+onBeforeUnmount(() => {
+    dialogData.value = null;
+});
 
 onMounted(async () => {
     addLoading.value = true;
@@ -119,10 +205,10 @@ onMounted(async () => {
             }
 
             acc[delay.OperationalTrainNumber] = {
-                id: delay.OperationalTrainNumber,
-                fromStation,
-                toStation,
-                data: []
+                OperationalTrainNumber: delay.OperationalTrainNumber,
+                FromStation: fromStation,
+                ToStation: toStation,
+                Data: []
             };
         }
 
@@ -133,7 +219,7 @@ onMounted(async () => {
             Station: getStationBySignature(delay.LocationSignature)
         };
 
-        acc[delay.OperationalTrainNumber].data.push(delayWithStation);
+        acc[delay.OperationalTrainNumber].Data.push(delayWithStation);
 
         return acc;
     }, {});
@@ -151,7 +237,7 @@ onMounted(async () => {
         <DataTable
             v-model:expandedRows="expandedRows"
             :value="delayedTrains"
-            dataKey="id"
+            dataKey="OperationalTrainNumber"
             tableStyle="min-width: 40rem"
             paginator
             :rows="10"
@@ -161,7 +247,7 @@ onMounted(async () => {
             v-model:filters="filters"
             filterDisplay="row"
         >
-            <template #loading> Laddar in de senaste förseningarna. Vänligen vänta. </template>
+            <template #loading> Laddar ändringar... </template>
             <template #header>
                 <div class="flex flex-wrap justify-content-end flex gap-2">
                     <Button text icon="pi pi-plus" label="Öppna Alla" @click="expandAll"></Button>
@@ -174,9 +260,13 @@ onMounted(async () => {
                 </div>
             </template>
             <Column expander style="width: 5rem" />
-            <Column field="id" header="Tåg" :filterMatchModeOptions="matchModeOptions">
+            <Column
+                field="OperationalTrainNumber"
+                header="Tåg"
+                :filterMatchModeOptions="matchModeOptions"
+            >
                 <template #body="{ data }">
-                    <span>{{ data?.id }}</span>
+                    <span>{{ data?.OperationalTrainNumber }}</span>
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText
@@ -190,11 +280,11 @@ onMounted(async () => {
             </Column>
             <Column
                 header="Från"
-                filterField="fromStation.AdvertisedLocationName"
+                filterField="FromStation.AdvertisedLocationName"
                 :filterMatchModeOptions="matchModeOptions"
             >
                 <template #body="{ data }">
-                    <span>{{ data?.fromStation?.AdvertisedLocationName }}</span>
+                    <span>{{ data?.FromStation?.AdvertisedLocationName }}</span>
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText
@@ -208,11 +298,11 @@ onMounted(async () => {
             </Column>
             <Column
                 header="Till"
-                filterField="toStation.AdvertisedLocationName"
+                filterField="ToStation.AdvertisedLocationName"
                 :filterMatchModeOptions="matchModeOptions"
             >
                 <template #body="{ data }">
-                    <span>{{ data?.toStation?.AdvertisedLocationName }}</span>
+                    <span>{{ data?.ToStation?.AdvertisedLocationName }}</span>
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText
@@ -244,12 +334,34 @@ onMounted(async () => {
             <template #expansion="slotProps">
                 <div class="p-3">
                     <div class="flex flex-wrap justify-content-between flex gap-2">
-                        <h5>Förseningar för tåg {{ slotProps.data.id }}</h5>
+                        <h5>Förseningar för tåg {{ slotProps.data.OperationalTrainNumber }}</h5>
+                        <Button
+                            text
+                            :icon="
+                                selectedRoute?.OperationalTrainNumber ===
+                                slotProps.data.OperationalTrainNumber
+                                    ? 'pi pi-times'
+                                    : 'pi pi-map'
+                            "
+                            :severity="
+                                selectedRoute?.OperationalTrainNumber ===
+                                slotProps.data.OperationalTrainNumber
+                                    ? 'danger'
+                                    : 'info'
+                            "
+                            :label="
+                                selectedRoute?.OperationalTrainNumber ===
+                                slotProps.data.OperationalTrainNumber
+                                    ? 'Stäng'
+                                    : 'Visa Sträcka'
+                            "
+                            @click="selectRoute(slotProps.data)"
+                        ></Button>
                     </div>
                     <DataTable
-                        :value="slotProps.data.data"
-                        dataKey="slotProps.data.delays.ActivityId"
-                        sortField="slotProps.data.delays.AdvertisedTimeAtLocation"
+                        :value="slotProps.data.Data"
+                        dataKey="slotProps.data.Data.ActivityId"
+                        sortField="slotProps.data.Data.AdvertisedTimeAtLocation"
                         :sortOrder="-1"
                     >
                         <Column header="Station">
@@ -303,11 +415,17 @@ onMounted(async () => {
         </DataTable>
 
         <!-- leaflet map-->
-        <MapComponent @opened-popup="updateTable" class="w-7" />
+        <MapComponent @opened-popup="updateTable" class="w-7" :route="selectedRoute" />
     </div>
-    <Dialog v-model:visible="dialogVisible" class="w-6">
+    <Toast />
+    <Dialog v-model:visible="dialogVisible" class="w-6" @update:visible="handleClose">
         <div class="h-22rem">
-            <h2 class="p-0">Registrera nytt ärende</h2>
+            <div v-if="ticketLockedByOther">
+                <h2 class="p-0 p-error">Ärendet hanteras just nu av en annan användare</h2>
+            </div>
+            <div v-else>
+                <h2 class="p-0">Registrera nytt ärende</h2>
+            </div>
             <Divider />
             <div class="flex flex-column gap-3 align-items-center" v-if="dialogData">
                 <h3 class="p-0">Tågnummer: {{ dialogData?.OperationalTrainNumber }}</h3>
@@ -316,7 +434,7 @@ onMounted(async () => {
                     <Dropdown
                         v-model:modelValue="selectedTicketCode"
                         :options="ticketCodes"
-                        :disabled="addLoading"
+                        :disabled="addLoading || ticketLockedByOther"
                         placeholder="Välj orsak"
                     >
                         <template #option="{ option }">
@@ -333,6 +451,7 @@ onMounted(async () => {
                         label="Skapa ärende"
                         class="p-button-rounded p-button-success p-button-sm"
                         :loading="addLoading"
+                        :disabled="ticketLockedByOther"
                         @click="createTicket"
                     ></Button>
                 </div>

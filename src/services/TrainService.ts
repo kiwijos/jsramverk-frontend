@@ -132,7 +132,7 @@ export default {
 
         return response.data.data.ticketCodes.data;
     },
-    async createTicket(request: TicketCreateDto): Promise<Ticket> {
+    async createTicket(request: TicketCreateDto): Promise<TicketResponse> {
         const graphqlQuery = {
             query: `mutation (
                 $code: String!,
@@ -168,7 +168,7 @@ export default {
             }
         });
 
-        return response.data.data.createTicket.data;
+        return response.data.data.createTicket;
     },
     async updateTicket(request: TicketUpdateDto): Promise<TicketResponse> {
         const graphqlQuery = {

@@ -59,14 +59,16 @@
                 @click="confirmUpdate"
                 icon="pi pi-check"
                 label="Ändra"
-                :disabled="addLoading || locked"
+                :loading="addLoading"
+                :disabled="locked"
             ></Button>
             <Button
                 @click="confirmDelete"
                 icon="pi pi-times"
                 severity="danger"
                 label="Ta bort"
-                :disabled="addLoading || locked"
+                :loading="addLoading"
+                :disabled="locked"
             ></Button>
         </div>
     </form>
