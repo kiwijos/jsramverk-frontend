@@ -11,19 +11,9 @@ const routes = [
         component: Home,
         children: [
             {
-                // Dashboard page
-                path: "",
-                name: "Dashboard",
-                meta: { requiresAuth: true },
-                component: () =>
-                    import(
-                        /* webpackChunkName: "dashboard" */ "../components/DashboardComponent.vue"
-                    )
-            },
-            {
                 // Delayed trains page
                 meta: { requiresAuth: true },
-                path: "delayed",
+                path: "/",
                 name: "Delayed",
                 component: () =>
                     import(/* webpackChunkName: "delayed" */ "../components/DelayedComponent.vue")
