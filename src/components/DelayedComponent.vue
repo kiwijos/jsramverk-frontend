@@ -223,7 +223,6 @@ onMounted(async () => {
 
         return acc;
     }, {});
-
     delayedTrains.value = Object.values(data);
 
     ticketCodes.value = await TrainService.getTicketCodes();
@@ -381,11 +380,16 @@ onMounted(async () => {
                                     )
                                 }}</span>
                                 <span>&nbsp;</span>
-                                <span class="font-bold">{{
-                                    new Date(data.EstimatedTimeAtLocation).toLocaleTimeString(
-                                        "sv-SE"
-                                    )
-                                }}</span>
+                                <span v-if="data.TimeAtLocation" class="font-bold">
+                                    {{ new Date(data.TimeAtLocation).toLocaleTimeString("sv-SE") }}
+                                </span>
+                                <span v-else class="font-bold">
+                                    {{
+                                        new Date(data.EstimatedTimeAtLocation).toLocaleTimeString(
+                                            "sv-SE"
+                                        )
+                                    }}
+                                </span>
                             </template>
                         </Column>
                         <Column header="Försening">
@@ -404,8 +408,21 @@ onMounted(async () => {
                         <Column header="Status" headerStyle="width:4rem">
                             <template #body="slotProps">
                                 <Tag
-                                    :value="slotProps.data.Cancelled ? 'Inställt' : 'Försenat'"
-                                    :severity="slotProps.data.Cancelled ? 'danger' : 'warning'"
+                                    class="flex flex-grow-0 flex-shrink-0"
+                                    :value="
+                                        slotProps.data.TimeAtLocation
+                                            ? 'Anlänt'
+                                            : slotProps.data.Cancelled
+                                            ? 'Inställt'
+                                            : 'Försenat'
+                                    "
+                                    :severity="
+                                        slotProps.data.TimeAtLocation
+                                            ? 'info'
+                                            : slotProps.data.Cancelled
+                                            ? 'danger'
+                                            : 'warning'
+                                    "
                                 />
                             </template>
                         </Column>
