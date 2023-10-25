@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import type { Ref } from "vue";
 import { FilterMatchMode, FilterService } from "primevue/api";
 import { useToast } from "primevue/usetoast";
@@ -26,9 +26,42 @@ const dialogData: Ref<TrainDelayGroup | null> = ref(null);
 const ticketCodes: Ref<TicketCode[]> = ref([]);
 const selectedTicketCode: Ref<TicketCode | null> = ref(null);
 const addLoading: Ref<boolean> = ref(false);
+const ticketLockedByOther: Ref<boolean> = ref(false);
 
 // This could be just a sub-set of delayedTrains, or all of them, or none of them
 const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
+
+// When dialogData changes, this most likely means that the user has selected a train to create a ticket for
+// This is a good time to lock the train so that no other user can create a ticket for it at the same time
+watch(dialogData, (newData, oldData) => {
+    // If the user has selected a train, lock it
+    if (newData?.id) {
+        socket.emit("lockTicket", newData.id);
+    }
+    // If the user has closed the dialog, unlock the train
+    if (oldData?.id) {
+        socket.emit("unlockTicket", oldData.id);
+    }
+});
+
+// Cofirmation that the train has been locked
+socket.on("ticketLockedByMe", () => {
+    ticketLockedByOther.value = false;
+});
+
+// Message that the train has already been locked by another user
+socket.on("ticketLockedByOther", (id: string) => {
+    if (dialogData.value?.id !== id) {
+        return;
+    }
+
+    ticketLockedByOther.value = true;
+});
+
+// Make sure that the dialog data is cleared when the dialog is closed
+const handleClose = () => {
+    dialogData.value = null;
+};
 
 const YOUR_FILTER = ref("YOUR FILTER");
 
@@ -128,6 +161,12 @@ const selectRoute = (route: TrainDelayGroup) => {
         viaStations: stations
     };
 };
+
+// Doubly make sure that the dialog data is cleared when the component is unmounted
+// (like when the user navigates away from the page)
+onBeforeUnmount(() => {
+    dialogData.value = null;
+});
 
 onMounted(async () => {
     addLoading.value = true;
@@ -366,7 +405,7 @@ onMounted(async () => {
         <MapComponent @opened-popup="updateTable" class="w-7" :route="selectedRoute" />
     </div>
     <Toast />
-    <Dialog v-model:visible="dialogVisible" class="w-6">
+    <Dialog v-model:visible="dialogVisible" class="w-6" @update:visible="handleClose">
         <div class="h-22rem">
             <h2 class="p-0">Registrera nytt ärende</h2>
             <Divider />
@@ -377,7 +416,7 @@ onMounted(async () => {
                     <Dropdown
                         v-model:modelValue="selectedTicketCode"
                         :options="ticketCodes"
-                        :disabled="addLoading"
+                        :disabled="addLoading || ticketLockedByOther"
                         placeholder="Välj orsak"
                     >
                         <template #option="{ option }">
@@ -394,6 +433,7 @@ onMounted(async () => {
                         label="Skapa ärende"
                         class="p-button-rounded p-button-success p-button-sm"
                         :loading="addLoading"
+                        :disabled="ticketLockedByOther"
                         @click="createTicket"
                     ></Button>
                 </div>
