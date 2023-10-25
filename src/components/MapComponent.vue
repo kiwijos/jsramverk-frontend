@@ -238,13 +238,14 @@ function openSocket() {
 
 <style scoped>
 .map-wrap {
-    position: relative;
-    width: 100%;
-    height: calc(100vh - 200px); /* calculate height of the screen minus the heading */
+    position: absolute;
+    z-index: 1;
+    width: 100vw;
+    height: calc(100vh - 105px); /* calculate height of the screen minus the heading */
 }
 
 .map {
-    position: absolute;
+    position: relative;
     width: 100%;
     height: 100%;
 }
