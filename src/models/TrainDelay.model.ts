@@ -11,4 +11,5 @@ export interface TrainDelay {
     TrainOwner: string;
     FromLocation: TrainLocation[];
     ToLocation: TrainLocation[];
+    TimeAtLocation?: string;
 }
