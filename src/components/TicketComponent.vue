@@ -110,10 +110,10 @@ const onRowUnselect = (event: TicketEvent): void => {
         <!-- Right-side form (displayed when a ticket is selected) -->
         <div v-if="selectedTicket" class="w-5">
             <div v-if="ticketLockedByOther">
-                <h2 class="p-error">Ärendet behandlas just nu av en annan användare</h2>
+                <h2 class="pt-3 p-error">Ärendet hanteras just nu av en annan användare</h2>
             </div>
             <div v-else>
-                <h2>Redigera ärende: {{ selectedTicket.id }}</h2>
+                <h2 class="pt-3">Redigera ärende: {{ selectedTicket.id }}</h2>
             </div>
             <TicketFormComponent
                 :selectedTicket="selectedTicket"
