@@ -407,7 +407,12 @@ onMounted(async () => {
     <Toast />
     <Dialog v-model:visible="dialogVisible" class="w-6" @update:visible="handleClose">
         <div class="h-22rem">
-            <h2 class="p-0">Registrera nytt ärende</h2>
+            <div v-if="ticketLockedByOther">
+                <h2 class="p-0 p-error">Ärendet hanteras just nu av en annan användare</h2>
+            </div>
+            <div v-else>
+                <h2 class="p-0">Registrera nytt ärende</h2>
+            </div>
             <Divider />
             <div class="flex flex-column gap-3 align-items-center" v-if="dialogData">
                 <h3 class="p-0">Tågnummer: {{ dialogData?.id }}</h3>
