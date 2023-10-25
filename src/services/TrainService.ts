@@ -29,7 +29,10 @@ export default {
         const response = await axios({
             url: graphqlEndpoint,
             method: "post",
-            data: graphqlQuery
+            data: graphqlQuery,
+            headers: {
+                "x-access-token": sessionStorage.getItem("x-access-token")
+            }
         });
 
         return response.data.data.trainStations.data;
@@ -54,7 +57,6 @@ export default {
                 }
             }`
         };
-
         const response = await axios({
             url: graphqlEndpoint,
             method: "post",
