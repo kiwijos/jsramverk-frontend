@@ -19,6 +19,12 @@ const props = defineProps<{
 watch(
     () => props.route,
     (newRoute, oldRoute) => {
+        // This should not happen as we are setting the route object to null on consecutive clicks,
+        // but if it does, we don't want to do anything
+        if (newRoute?.OperationalTrainNumber === oldRoute?.OperationalTrainNumber) {
+            return;
+        }
+
         // check if map has is loaded and has a route layer
         if (map.value?.getLayer("route") !== undefined) {
             // remove the route layer
@@ -30,12 +36,6 @@ watch(
         if (map.value?.getLayer("stations") !== undefined) {
             map.value?.removeLayer("stations");
             map.value?.removeSource("stations");
-        }
-
-        // This should not happen as we are setting the route object to null on consecutive clicks,
-        // but if it does, we don't want to do anything
-        if (newRoute?.OperationalTrainNumber === oldRoute?.OperationalTrainNumber) {
-            return;
         }
 
         if (newRoute === null || newRoute === undefined) {
