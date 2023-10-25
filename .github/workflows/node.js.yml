@@ -4,7 +4,7 @@
 name: Node.js CI
 
 env:
-    VITE_API_URL: https://jsramverk-editor-allq22.azurewebsites.net
+    VITE_API_URL: https://jsramverk-trains-jopl16.azurewebsites.net/
 
 on:
     push:
