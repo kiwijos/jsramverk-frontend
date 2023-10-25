@@ -35,12 +35,12 @@ const expandedRows: Ref<TrainDelayGroup[] | null> = ref(null);
 // This is a good time to lock the train so that no other user can create a ticket for it at the same time
 watch(dialogData, (newData, oldData) => {
     // If the user has selected a train, lock it
-    if (newData?.id) {
-        socket.emit("lockTicket", newData.id);
+    if (newData?.OperationalTrainNumber) {
+        socket.emit("lockTicket", newData.OperationalTrainNumber);
     }
     // If the user has closed the dialog, unlock the train
-    if (oldData?.id) {
-        socket.emit("unlockTicket", oldData.id);
+    if (oldData?.OperationalTrainNumber) {
+        socket.emit("unlockTicket", oldData.OperationalTrainNumber);
     }
 });
 
@@ -51,7 +51,7 @@ socket.on("ticketLockedByMe", () => {
 
 // Message that the train has already been locked by another user
 socket.on("ticketLockedByOther", (id: string) => {
-    if (dialogData.value?.id !== id) {
+    if (dialogData.value?.OperationalTrainNumber !== id) {
         return;
     }
 
@@ -66,12 +66,12 @@ const handleClose = () => {
 const YOUR_FILTER = ref("YOUR FILTER");
 
 const filters = ref({
-    id: { value: null, matchMode: YOUR_FILTER.value },
-    "fromStation.AdvertisedLocationName": {
+    OperationalTrainNumber: { value: null, matchMode: YOUR_FILTER.value },
+    "FromStation.AdvertisedLocationName": {
         value: null,
         matchMode: YOUR_FILTER.value
     },
-    "toStation.AdvertisedLocationName": {
+    "ToStation.AdvertisedLocationName": {
         value: null,
         matchMode: YOUR_FILTER.value
     }
@@ -88,7 +88,7 @@ const createTicket = async () => {
     const request = {
         code: selectedTicketCode.value?.Code as string,
         traindate: new Date(),
-        trainnumber: dialogData.value?.id as string
+        trainnumber: dialogData.value?.OperationalTrainNumber as string
     };
 
     addLoading.value = true;
@@ -117,7 +117,7 @@ const createTicket = async () => {
 };
 
 const expandAll = () => {
-    expandedRows.value = delayedTrains.value.filter((delay) => delay.id);
+    expandedRows.value = delayedTrains.value.filter((delay) => delay.OperationalTrainNumber);
 };
 const collapseAll = () => {
     expandedRows.value = null;
@@ -133,32 +133,32 @@ const getStationBySignature = (signature: string): TrainStation | null => {
 
 const updateTable = (trainNumber: string) => {
     // Clear all other filters
-    filters.value["fromStation.AdvertisedLocationName"].value = null;
-    filters.value["toStation.AdvertisedLocationName"].value = null;
+    filters.value["FromStation.AdvertisedLocationName"].value = null;
+    filters.value["ToStation.AdvertisedLocationName"].value = null;
 
     // Update the table filter to only show the train with the given train number
     // (This is a bit hacky, but it works)
     // @ts-ignore
     YOUR_FILTER.value = FilterMatchMode.EXACT;
     // @ts-ignore
-    filters.value.id.value = trainNumber;
+    filters.value.OperationalTrainNumber.value = trainNumber;
 };
 
 const selectRoute = (route: TrainDelayGroup) => {
-    if (selectedRoute.value?.id === route.id) {
+    if (selectedRoute.value?.OperationalTrainNumber === route.OperationalTrainNumber) {
         selectedRoute.value = null;
         return;
     }
 
     // loop through all the delays for this route and keep only the Station for each delay
     // (we don't need the full delay object)
-    let stations: TrainStation[] = route.data.map((delay) => delay.Station as TrainStation);
+    let stations: TrainStation[] = route.Data.map((delay) => delay.Station as TrainStation);
 
     selectedRoute.value = {
-        id: route.id,
-        fromStation: route.fromStation,
-        toStation: route.toStation,
-        viaStations: stations
+        OperationalTrainNumber: route.OperationalTrainNumber,
+        FromStation: route.FromStation,
+        ToStation: route.ToStation,
+        ViaStations: stations
     };
 };
 
@@ -205,10 +205,10 @@ onMounted(async () => {
             }
 
             acc[delay.OperationalTrainNumber] = {
-                id: delay.OperationalTrainNumber,
-                fromStation,
-                toStation,
-                data: []
+                OperationalTrainNumber: delay.OperationalTrainNumber,
+                FromStation: fromStation,
+                ToStation: toStation,
+                Data: []
             };
         }
 
@@ -219,7 +219,7 @@ onMounted(async () => {
             Station: getStationBySignature(delay.LocationSignature)
         };
 
-        acc[delay.OperationalTrainNumber].data.push(delayWithStation);
+        acc[delay.OperationalTrainNumber].Data.push(delayWithStation);
 
         return acc;
     }, {});
@@ -237,7 +237,7 @@ onMounted(async () => {
         <DataTable
             v-model:expandedRows="expandedRows"
             :value="delayedTrains"
-            dataKey="id"
+            dataKey="OperationalTrainNumber"
             tableStyle="min-width: 40rem"
             paginator
             :rows="10"
@@ -260,9 +260,13 @@ onMounted(async () => {
                 </div>
             </template>
             <Column expander style="width: 5rem" />
-            <Column field="id" header="Tåg" :filterMatchModeOptions="matchModeOptions">
+            <Column
+                field="OperationalTrainNumber"
+                header="Tåg"
+                :filterMatchModeOptions="matchModeOptions"
+            >
                 <template #body="{ data }">
-                    <span>{{ data?.id }}</span>
+                    <span>{{ data?.OperationalTrainNumber }}</span>
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText
@@ -276,11 +280,11 @@ onMounted(async () => {
             </Column>
             <Column
                 header="Från"
-                filterField="fromStation.AdvertisedLocationName"
+                filterField="FromStation.AdvertisedLocationName"
                 :filterMatchModeOptions="matchModeOptions"
             >
                 <template #body="{ data }">
-                    <span>{{ data?.fromStation?.AdvertisedLocationName }}</span>
+                    <span>{{ data?.FromStation?.AdvertisedLocationName }}</span>
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText
@@ -294,11 +298,11 @@ onMounted(async () => {
             </Column>
             <Column
                 header="Till"
-                filterField="toStation.AdvertisedLocationName"
+                filterField="ToStation.AdvertisedLocationName"
                 :filterMatchModeOptions="matchModeOptions"
             >
                 <template #body="{ data }">
-                    <span>{{ data?.toStation?.AdvertisedLocationName }}</span>
+                    <span>{{ data?.ToStation?.AdvertisedLocationName }}</span>
                 </template>
                 <template #filter="{ filterModel, filterCallback }">
                     <InputText
@@ -330,25 +334,34 @@ onMounted(async () => {
             <template #expansion="slotProps">
                 <div class="p-3">
                     <div class="flex flex-wrap justify-content-between flex gap-2">
-                        <h5>Förseningar för tåg {{ slotProps.data.id }}</h5>
+                        <h5>Förseningar för tåg {{ slotProps.data.OperationalTrainNumber }}</h5>
                         <Button
                             text
                             :icon="
-                                selectedRoute?.id === slotProps.data.id
+                                selectedRoute?.OperationalTrainNumber ===
+                                slotProps.data.OperationalTrainNumber
                                     ? 'pi pi-times'
                                     : 'pi pi-map'
                             "
-                            :severity="selectedRoute?.id === slotProps.data.id ? 'danger' : 'info'"
+                            :severity="
+                                selectedRoute?.OperationalTrainNumber ===
+                                slotProps.data.OperationalTrainNumber
+                                    ? 'danger'
+                                    : 'info'
+                            "
                             :label="
-                                selectedRoute?.id === slotProps.data.id ? 'Stäng' : 'Visa Sträcka'
+                                selectedRoute?.OperationalTrainNumber ===
+                                slotProps.data.OperationalTrainNumber
+                                    ? 'Stäng'
+                                    : 'Visa Sträcka'
                             "
                             @click="selectRoute(slotProps.data)"
                         ></Button>
                     </div>
                     <DataTable
-                        :value="slotProps.data.data"
-                        dataKey="slotProps.data.delays.ActivityId"
-                        sortField="slotProps.data.delays.AdvertisedTimeAtLocation"
+                        :value="slotProps.data.Data"
+                        dataKey="slotProps.data.Data.ActivityId"
+                        sortField="slotProps.data.Data.AdvertisedTimeAtLocation"
                         :sortOrder="-1"
                     >
                         <Column header="Station">
@@ -415,7 +428,7 @@ onMounted(async () => {
             </div>
             <Divider />
             <div class="flex flex-column gap-3 align-items-center" v-if="dialogData">
-                <h3 class="p-0">Tågnummer: {{ dialogData?.id }}</h3>
+                <h3 class="p-0">Tågnummer: {{ dialogData?.OperationalTrainNumber }}</h3>
                 <div class="w-5 flex flex-column gap-3">
                     <h3>Orsakskod</h3>
                     <Dropdown

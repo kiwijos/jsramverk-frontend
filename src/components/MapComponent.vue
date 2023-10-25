@@ -21,7 +21,7 @@ watch(
     (newRoute, oldRoute) => {
         // This should not happen as we are setting the route object to null on consecutive clicks,
         // but if it does, we don't want to do anything
-        if (newRoute?.id === oldRoute?.id) {
+        if (newRoute?.OperationalTrainNumber === oldRoute?.OperationalTrainNumber) {
             return;
         }
 
@@ -34,7 +34,7 @@ watch(
             // loop through all markers and hide them
             // except the one that matches the selected route id
             trainMarkers.value.forEach((marker, key) => {
-                if (key === newRoute.id) {
+                if (key === newRoute.OperationalTrainNumber) {
                     marker.removeClassName("hidden");
                 } else {
                     // close popup if open
@@ -111,7 +111,7 @@ function openSocket() {
             if (props.route === null || props.route === undefined) {
                 marker.removeClassName("hidden");
             } else {
-                if (data.trainnumber === props.route.id) {
+                if (data.trainnumber === props.route.OperationalTrainNumber) {
                     marker.removeClassName("hidden");
                 } else {
                     marker.addClassName("hidden");

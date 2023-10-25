@@ -1,8 +1,8 @@
 import type { TrainStation } from "./TrainStation.model";
 
 export interface TrainRoute {
-    id: string;
-    fromStation: TrainStation | null;
-    toStation: TrainStation | null;
-    viaStations: TrainStation[];
+    OperationalTrainNumber: string;
+    FromStation: TrainStation | null;
+    ToStation: TrainStation | null;
+    ViaStations: TrainStation[];
 }
