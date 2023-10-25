@@ -11,9 +11,11 @@ import { shallowRef, onMounted, onUnmounted, markRaw, watch, type Raw, ref } fro
 import { socket } from "@/socket";
 
 import type { TrainRoute } from "@/models/TrainRoute.model";
+import type { TrainDelay } from "@/models/TrainDelay.model";
 
 const props = defineProps<{
     route?: TrainRoute | null;
+    delayedTrains?: TrainDelay[] | null;
 }>();
 
 watch(
@@ -179,6 +181,9 @@ onUnmounted(() => {
 function openSocket() {
     socket.on("message", (data: Train) => {
         // add and openedPopup train markers
+        if (!props.delayedTrains?.find((x) => x.OperationalTrainNumber === data.trainnumber)) {
+            return;
+        }
         const train = trainMarkers.value.get(data.trainnumber);
         if (train) {
             train.setLngLat([data.position[1], data.position[0]]);
