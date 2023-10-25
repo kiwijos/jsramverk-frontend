@@ -53,6 +53,7 @@ export default {
                         OperationalTrainNumber
                         ToLocation { LocationName Order Priority }
                         TrainOwner
+                        TimeAtLocation
                     }
                 }
             }`

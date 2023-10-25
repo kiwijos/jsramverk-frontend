@@ -223,7 +223,6 @@ onMounted(async () => {
 
         return acc;
     }, {});
-
     delayedTrains.value = Object.values(data);
 
     ticketCodes.value = await TrainService.getTicketCodes();
@@ -258,6 +257,10 @@ onMounted(async () => {
                         @click="collapseAll"
                     ></Button>
                 </div>
+                <h5 class="font-italic">
+                    * Betyder att tiden är uppskattad. Om tåget har anlänt visas den faktiska tiden
+                    istället.
+                </h5>
             </template>
             <Column expander style="width: 5rem" />
             <Column
@@ -333,7 +336,7 @@ onMounted(async () => {
             </Column>
             <template #expansion="slotProps">
                 <div class="p-3">
-                    <div class="flex flex-wrap justify-content-between flex gap-2">
+                    <div class="flex flex-wrap justify-content-between align-items-center">
                         <h5>Förseningar för tåg {{ slotProps.data.OperationalTrainNumber }}</h5>
                         <Button
                             text
@@ -373,7 +376,7 @@ onMounted(async () => {
                                 }}</span>
                             </template>
                         </Column>
-                        <Column header="Beräknad avgång">
+                        <Column header="Avgång">
                             <template #body="{ data }">
                                 <span class="line-through">{{
                                     new Date(data.AdvertisedTimeAtLocation).toLocaleTimeString(
@@ -381,11 +384,16 @@ onMounted(async () => {
                                     )
                                 }}</span>
                                 <span>&nbsp;</span>
-                                <span class="font-bold">{{
-                                    new Date(data.EstimatedTimeAtLocation).toLocaleTimeString(
-                                        "sv-SE"
-                                    )
-                                }}</span>
+                                <span class="font-bold">
+                                    {{
+                                        new Date(
+                                            data.TimeAtLocation
+                                                ? data.TimeAtLocation
+                                                : data.EstimatedTimeAtLocation
+                                        ).toLocaleTimeString("sv-SE")
+                                    }}
+                                    <span v-if="!data.TimeAtLocation">*</span>
+                                </span>
                             </template>
                         </Column>
                         <Column header="Försening">
@@ -393,7 +401,11 @@ onMounted(async () => {
                                 <span>
                                     {{
                                         new Date(
-                                            new Date(data.EstimatedTimeAtLocation).getTime() -
+                                            new Date(
+                                                data.TimeAtLocation
+                                                    ? data.TimeAtLocation
+                                                    : data.EstimatedTimeAtLocation
+                                            ).getTime() -
                                                 new Date(data.AdvertisedTimeAtLocation).getTime()
                                         ).getMinutes()
                                     }}
@@ -404,8 +416,21 @@ onMounted(async () => {
                         <Column header="Status" headerStyle="width:4rem">
                             <template #body="slotProps">
                                 <Tag
-                                    :value="slotProps.data.Cancelled ? 'Inställt' : 'Försenat'"
-                                    :severity="slotProps.data.Cancelled ? 'danger' : 'warning'"
+                                    class="flex flex-grow-0 flex-shrink-0"
+                                    :value="
+                                        slotProps.data.TimeAtLocation
+                                            ? 'Avgått'
+                                            : slotProps.data.Cancelled
+                                            ? 'Inställt'
+                                            : 'Försenat'
+                                    "
+                                    :severity="
+                                        slotProps.data.TimeAtLocation
+                                            ? 'info'
+                                            : slotProps.data.Cancelled
+                                            ? 'danger'
+                                            : 'warning'
+                                    "
                                 />
                             </template>
                         </Column>

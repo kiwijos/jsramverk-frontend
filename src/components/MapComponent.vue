@@ -27,6 +27,19 @@ watch(
             return;
         }
 
+        // check if map has is loaded and has a route layer
+        if (map.value?.getLayer("route") !== undefined) {
+            // remove the route layer
+            map.value?.removeLayer("route");
+            map.value?.removeSource("route");
+        }
+
+        // Do the same for the stations layer
+        if (map.value?.getLayer("stations") !== undefined) {
+            map.value?.removeLayer("stations");
+            map.value?.removeSource("stations");
+        }
+
         if (newRoute === null || newRoute === undefined) {
             // loop through all markers and unhide them
             trainMarkers.value.forEach((marker) => {
