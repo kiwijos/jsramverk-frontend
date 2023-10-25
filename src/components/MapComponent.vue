@@ -47,7 +47,7 @@ watch(
 
             // draw the route
             // loop thorugh the route object and extract the lat and lng from both the origin and destination and via stations
-            const latLng: [] = [];
+            const latLng: any = [];
             latLng.push([newRoute.FromStation?.Longitude, newRoute.FromStation?.Latitude]);
             newRoute.ViaStations?.forEach((station) => {
                 latLng.push([station.Longitude, station.Latitude]);
