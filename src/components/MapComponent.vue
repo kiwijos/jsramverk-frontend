@@ -44,6 +44,18 @@ watch(
                     marker.addClassName("hidden");
                 }
             });
+
+            // draw the route
+            // loop thorugh the route object and extract the lat and lng from both the origin and destination and via stations
+            const latLng: any = [];
+            latLng.push([newRoute.FromStation?.Longitude, newRoute.FromStation?.Latitude]);
+            newRoute.ViaStations?.forEach((station) => {
+                latLng.push([station.Longitude, station.Latitude]);
+            });
+            latLng.push([newRoute.ToStation?.Longitude, newRoute.ToStation?.Latitude]);
+
+            drawGeoJsonLine(latLng);
+            drawGeoJsonPoints(newRoute);
         }
     }
 );
@@ -60,6 +72,88 @@ const trainMarkers = ref(new Map<string, Libre.Marker>());
 
 const mapContainer = shallowRef<string | HTMLElement | null>(null);
 const map = shallowRef<Raw<Libre.Map> | null>(null);
+
+const drawGeoJsonLine = (latLng: []) => {
+    map.value?.addSource("route", {
+        type: "geojson",
+        data: {
+            type: "Feature",
+            properties: {},
+            geometry: {
+                type: "LineString",
+                coordinates: latLng
+            }
+        }
+    });
+    map.value?.addLayer({
+        id: "route",
+        type: "line",
+        source: "route",
+        layout: {
+            "line-join": "round",
+            "line-cap": "round"
+        },
+        paint: {
+            "line-color": "red",
+            "line-width": 4
+        }
+    });
+};
+
+const drawGeoJsonPoints = (route: TrainRoute) => {
+    const features = [];
+    // for each station in the route, create a feature
+
+    features.push({
+        type: "Feature",
+        geometry: {
+            type: "Point",
+            coordinates: [route.FromStation?.Longitude, route.FromStation?.Latitude]
+        },
+        properties: { name: route.FromStation?.AdvertisedLocationName }
+    });
+
+    route.ViaStations?.forEach((station) => {
+        features.push({
+            type: "Feature",
+            geometry: {
+                type: "Point",
+                coordinates: [station.Longitude, station.Latitude]
+            },
+            properties: { name: station.AdvertisedLocationName }
+        });
+    });
+
+    features.push({
+        type: "Feature",
+        geometry: {
+            type: "Point",
+            coordinates: [route.ToStation?.Longitude, route.ToStation?.Latitude]
+        },
+        properties: { name: route.ToStation?.AdvertisedLocationName }
+    });
+
+    map.value?.addSource("stations", {
+        type: "geojson",
+        data: {
+            type: "FeatureCollection",
+            features: features
+        }
+    });
+
+    map.value?.addLayer({
+        id: "stations",
+        type: "symbol",
+        source: "stations",
+        layout: {
+            // get the name from the source's "name" property
+            "text-field": ["get", "name"],
+            "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+            "text-offset": [0, 1.25],
+            "text-anchor": "top"
+        }
+    });
+};
 
 onMounted(() => {
     const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
