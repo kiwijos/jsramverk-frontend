@@ -54,8 +54,6 @@ socket.on("ticketLockedByOther", (id) => {
         return;
     }
 
-    console.log("ticketLockedByOther", id);
-
     ticketLockedByOther.value = true;
 });
 
