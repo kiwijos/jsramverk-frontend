@@ -13,6 +13,7 @@ import type { TrainStation } from "@/models/TrainStation.model";
 import type { TrainDelayWithStationDto } from "@/models/TrainDelayWithStationDto.model";
 import type { TrainDelayGroup } from "@/models/TrainDelayGroup.model";
 import type { TrainRoute } from "@/models/TrainRoute.model";
+import { time } from "console";
 
 const toast = useToast();
 
@@ -232,221 +233,212 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="flex">
-        <DataTable
-            v-model:expandedRows="expandedRows"
-            :value="delayedTrains"
-            dataKey="OperationalTrainNumber"
-            tableStyle="min-width: 40rem"
-            paginator
-            :rows="10"
-            :rowsPerPageOptions="[5, 10, 25]"
-            :loading="addLoading"
-            :stripedRows="true"
-            v-model:filters="filters"
-            filterDisplay="row"
+    <DataTable
+        v-model:expandedRows="expandedRows"
+        :value="delayedTrains"
+        dataKey="OperationalTrainNumber"
+        tableStyle="min-width: 40rem"
+        class="w-5 table-float"
+        paginator
+        :rows="10"
+        :rowsPerPageOptions="[5, 10, 25]"
+        :loading="addLoading"
+        :stripedRows="true"
+        v-model:filters="filters"
+        filterDisplay="row"
+    >
+        <template #loading><ProgressSpinner animationDuration=".5s" /></template>
+        <template #header>
+            <div class="flex flex-wrap justify-content-end flex gap-2">
+                <Button text icon="pi pi-plus" label="Öppna Alla" @click="expandAll"></Button>
+                <Button text icon="pi pi-minus" label="Stäng Alla" @click="collapseAll"></Button>
+            </div>
+            <h5 class="font-italic">
+                * Betyder att tiden är uppskattad. Om tåget har anlänt visas den faktiska tiden
+                istället.
+            </h5>
+        </template>
+        <Column expander style="width: 5rem" />
+        <Column
+            field="OperationalTrainNumber"
+            header="Tåg"
+            :filterMatchModeOptions="matchModeOptions"
         >
-            <template #loading> Laddar ändringar... </template>
-            <template #header>
-                <div class="flex flex-wrap justify-content-end flex gap-2">
-                    <Button text icon="pi pi-plus" label="Öppna Alla" @click="expandAll"></Button>
+            <template #body="{ data }">
+                <span>{{ data?.OperationalTrainNumber }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                    v-model="filterModel.value"
+                    type="text"
+                    @input="filterCallback()"
+                    class="p-column-filter"
+                    placeholder="Sök..."
+                />
+            </template>
+        </Column>
+        <Column
+            header="Från"
+            filterField="FromStation.AdvertisedLocationName"
+            :filterMatchModeOptions="matchModeOptions"
+        >
+            <template #body="{ data }">
+                <span>{{ data?.FromStation?.AdvertisedLocationName }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                    v-model="filterModel.value"
+                    type="text"
+                    @input="filterCallback()"
+                    class="p-column-filter"
+                    placeholder="Sök..."
+                />
+            </template>
+        </Column>
+        <Column
+            header="Till"
+            filterField="ToStation.AdvertisedLocationName"
+            :filterMatchModeOptions="matchModeOptions"
+        >
+            <template #body="{ data }">
+                <span>{{ data?.ToStation?.AdvertisedLocationName }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                    v-model="filterModel.value"
+                    type="text"
+                    @input="filterCallback()"
+                    class="p-column-filter"
+                    placeholder="Sök..."
+                />
+            </template>
+        </Column>
+        <Column headerStyle="width:4rem">
+            <template #body="{ data }">
+                <Button
+                    icon="pi pi-plus"
+                    severity="info"
+                    text
+                    rounded
+                    aria-label="Nytt Ärende"
+                    @click="
+                        () => {
+                            dialogData = data;
+                            dialogVisible = true;
+                        }
+                    "
+                ></Button>
+            </template>
+        </Column>
+        <template #expansion="slotProps">
+            <div class="p-3">
+                <div class="flex flex-wrap justify-content-between align-items-center">
+                    <h5>Förseningar för tåg {{ slotProps.data.OperationalTrainNumber }}</h5>
                     <Button
                         text
-                        icon="pi pi-minus"
-                        label="Stäng Alla"
-                        @click="collapseAll"
+                        :icon="
+                            selectedRoute?.OperationalTrainNumber ===
+                            slotProps.data.OperationalTrainNumber
+                                ? 'pi pi-times'
+                                : 'pi pi-map'
+                        "
+                        :severity="
+                            selectedRoute?.OperationalTrainNumber ===
+                            slotProps.data.OperationalTrainNumber
+                                ? 'danger'
+                                : 'info'
+                        "
+                        :label="
+                            selectedRoute?.OperationalTrainNumber ===
+                            slotProps.data.OperationalTrainNumber
+                                ? 'Stäng'
+                                : 'Visa Sträcka'
+                        "
+                        @click="selectRoute(slotProps.data)"
                     ></Button>
                 </div>
-                <h5 class="font-italic">
-                    * Betyder att tiden är uppskattad. Om tåget har anlänt visas den faktiska tiden
-                    istället.
-                </h5>
-            </template>
-            <Column expander style="width: 5rem" />
-            <Column
-                field="OperationalTrainNumber"
-                header="Tåg"
-                :filterMatchModeOptions="matchModeOptions"
-            >
-                <template #body="{ data }">
-                    <span>{{ data?.OperationalTrainNumber }}</span>
-                </template>
-                <template #filter="{ filterModel, filterCallback }">
-                    <InputText
-                        v-model="filterModel.value"
-                        type="text"
-                        @input="filterCallback()"
-                        class="p-column-filter"
-                        placeholder="Sök..."
-                    />
-                </template>
-            </Column>
-            <Column
-                header="Från"
-                filterField="FromStation.AdvertisedLocationName"
-                :filterMatchModeOptions="matchModeOptions"
-            >
-                <template #body="{ data }">
-                    <span>{{ data?.FromStation?.AdvertisedLocationName }}</span>
-                </template>
-                <template #filter="{ filterModel, filterCallback }">
-                    <InputText
-                        v-model="filterModel.value"
-                        type="text"
-                        @input="filterCallback()"
-                        class="p-column-filter"
-                        placeholder="Sök..."
-                    />
-                </template>
-            </Column>
-            <Column
-                header="Till"
-                filterField="ToStation.AdvertisedLocationName"
-                :filterMatchModeOptions="matchModeOptions"
-            >
-                <template #body="{ data }">
-                    <span>{{ data?.ToStation?.AdvertisedLocationName }}</span>
-                </template>
-                <template #filter="{ filterModel, filterCallback }">
-                    <InputText
-                        v-model="filterModel.value"
-                        type="text"
-                        @input="filterCallback()"
-                        class="p-column-filter"
-                        placeholder="Sök..."
-                    />
-                </template>
-            </Column>
-            <Column headerStyle="width:4rem">
-                <template #body="{ data }">
-                    <Button
-                        icon="pi pi-plus"
-                        severity="info"
-                        text
-                        rounded
-                        aria-label="Nytt Ärende"
-                        @click="
-                            () => {
-                                dialogData = data;
-                                dialogVisible = true;
-                            }
-                        "
-                    ></Button>
-                </template>
-            </Column>
-            <template #expansion="slotProps">
-                <div class="p-3">
-                    <div class="flex flex-wrap justify-content-between align-items-center">
-                        <h5>Förseningar för tåg {{ slotProps.data.OperationalTrainNumber }}</h5>
-                        <Button
-                            text
-                            :icon="
-                                selectedRoute?.OperationalTrainNumber ===
-                                slotProps.data.OperationalTrainNumber
-                                    ? 'pi pi-times'
-                                    : 'pi pi-map'
-                            "
-                            :severity="
-                                selectedRoute?.OperationalTrainNumber ===
-                                slotProps.data.OperationalTrainNumber
-                                    ? 'danger'
-                                    : 'info'
-                            "
-                            :label="
-                                selectedRoute?.OperationalTrainNumber ===
-                                slotProps.data.OperationalTrainNumber
-                                    ? 'Stäng'
-                                    : 'Visa Sträcka'
-                            "
-                            @click="selectRoute(slotProps.data)"
-                        ></Button>
-                    </div>
-                    <DataTable
-                        :value="slotProps.data.Data"
-                        dataKey="slotProps.data.Data.ActivityId"
-                        sortField="slotProps.data.Data.AdvertisedTimeAtLocation"
-                        :sortOrder="-1"
-                    >
-                        <Column header="Station">
-                            <template #body="{ data }">
-                                <span>{{
-                                    data.Station
-                                        ? data.Station.AdvertisedLocationName
-                                        : data.LocationSignature
-                                }}</span>
-                            </template>
-                        </Column>
-                        <Column header="Avgång">
-                            <template #body="{ data }">
-                                <span class="line-through">{{
-                                    new Date(data.AdvertisedTimeAtLocation).toLocaleTimeString(
-                                        "sv-SE"
-                                    )
-                                }}</span>
-                                <span>&nbsp;</span>
-                                <span class="font-bold">
-                                    {{
+                <DataTable
+                    :value="slotProps.data.Data"
+                    dataKey="slotProps.data.Data.ActivityId"
+                    sortField="slotProps.data.Data.AdvertisedTimeAtLocation"
+                    :sortOrder="-1"
+                >
+                    <Column header="Station">
+                        <template #body="{ data }">
+                            <span>{{
+                                data.Station
+                                    ? data.Station.AdvertisedLocationName
+                                    : data.LocationSignature
+                            }}</span>
+                        </template>
+                    </Column>
+                    <Column header="Avgång">
+                        <template #body="{ data }">
+                            <span class="line-through">{{
+                                new Date(data.AdvertisedTimeAtLocation).toLocaleTimeString("sv-SE")
+                            }}</span>
+                            <span>&nbsp;</span>
+                            <span class="font-bold">
+                                {{
+                                    new Date(
+                                        data.TimeAtLocation
+                                            ? data.TimeAtLocation
+                                            : data.EstimatedTimeAtLocation
+                                    ).toLocaleTimeString("sv-SE")
+                                }}
+                                <span v-if="!data.TimeAtLocation">*</span>
+                            </span>
+                        </template>
+                    </Column>
+                    <Column header="Försening">
+                        <template #body="{ data }">
+                            <span>
+                                {{
+                                    new Date(
                                         new Date(
                                             data.TimeAtLocation
                                                 ? data.TimeAtLocation
                                                 : data.EstimatedTimeAtLocation
-                                        ).toLocaleTimeString("sv-SE")
-                                    }}
-                                    <span v-if="!data.TimeAtLocation">*</span>
-                                </span>
-                            </template>
-                        </Column>
-                        <Column header="Försening">
-                            <template #body="{ data }">
-                                <span>
-                                    {{
-                                        new Date(
-                                            new Date(
-                                                data.TimeAtLocation
-                                                    ? data.TimeAtLocation
-                                                    : data.EstimatedTimeAtLocation
-                                            ).getTime() -
-                                                new Date(data.AdvertisedTimeAtLocation).getTime()
-                                        ).getMinutes()
-                                    }}
-                                    minuter
-                                </span>
-                            </template>
-                        </Column>
-                        <Column header="Status" headerStyle="width:4rem">
-                            <template #body="slotProps">
-                                <Tag
-                                    class="flex flex-grow-0 flex-shrink-0"
-                                    :value="
-                                        slotProps.data.TimeAtLocation
-                                            ? 'Avgått'
-                                            : slotProps.data.Cancelled
-                                            ? 'Inställt'
-                                            : 'Försenat'
-                                    "
-                                    :severity="
-                                        slotProps.data.TimeAtLocation
-                                            ? 'info'
-                                            : slotProps.data.Cancelled
-                                            ? 'danger'
-                                            : 'warning'
-                                    "
-                                />
-                            </template>
-                        </Column>
-                    </DataTable>
-                </div>
-            </template>
-        </DataTable>
+                                        ).getTime() -
+                                            new Date(data.AdvertisedTimeAtLocation).getTime()
+                                    ).getMinutes()
+                                }}
+                                minuter
+                            </span>
+                        </template>
+                    </Column>
+                    <Column header="Status" headerStyle="width:4rem">
+                        <template #body="slotProps">
+                            <Tag
+                                class="flex flex-grow-0 flex-shrink-0"
+                                :value="
+                                    slotProps.data.TimeAtLocation
+                                        ? 'Avgått'
+                                        : slotProps.data.Cancelled
+                                        ? 'Inställt'
+                                        : 'Försenat'
+                                "
+                                :severity="
+                                    slotProps.data.TimeAtLocation
+                                        ? 'info'
+                                        : slotProps.data.Cancelled
+                                        ? 'danger'
+                                        : 'warning'
+                                "
+                            />
+                        </template>
+                    </Column>
+                </DataTable>
+            </div>
+        </template>
+    </DataTable>
 
-        <!-- leaflet map-->
-        <MapComponent
-            @opened-popup="updateTable"
-            class="w-7"
-            :route="selectedRoute"
-            :delayedTrains="delayedTrains"
-        />
-    </div>
+    <!-- leaflet map-->
+    <MapComponent
+        @opened-popup="updateTable"
+        :route="selectedRoute"
+        :delayedTrains="delayedTrains"
+    />
     <Toast />
     <Dialog v-model:visible="dialogVisible" class="w-6" @update:visible="handleClose">
         <div class="h-22rem">
@@ -489,3 +481,13 @@ onMounted(async () => {
         </div>
     </Dialog>
 </template>
+
+<style scoped>
+.table-float {
+    position: fixed;
+    z-index: 10;
+    height: calc(100vh - 95px);
+    overflow: scroll;
+    opacity: 0.9;
+}
+</style>

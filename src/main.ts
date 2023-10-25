@@ -21,6 +21,7 @@ import InputNumber from "primevue/inputnumber";
 import Toast from "primevue/toast";
 import Card from "primevue/card";
 import ConfirmDialog from "primevue/confirmdialog";
+import ProgressSpinner from "primevue/progressspinner";
 import Tag from "primevue/tag";
 
 createApp(App)
@@ -44,4 +45,5 @@ createApp(App)
     .component("Toast", Toast)
     .component("Card", Card)
     .component("Tag", Tag)
+    .component("ProgressSpinner", ProgressSpinner)
     .mount("#app");
