@@ -415,7 +415,12 @@ onMounted(async () => {
         </DataTable>
 
         <!-- leaflet map-->
-        <MapComponent @opened-popup="updateTable" class="w-7" :route="selectedRoute" />
+        <MapComponent
+            @opened-popup="updateTable"
+            class="w-7"
+            :route="selectedRoute"
+            :delayedTrains="delayedTrains"
+        />
     </div>
     <Toast />
     <Dialog v-model:visible="dialogVisible" class="w-6" @update:visible="handleClose">
