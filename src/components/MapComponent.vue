@@ -60,16 +60,7 @@ watch(
                 }
             });
 
-            // draw the route
-            // loop thorugh the route object and extract the lat and lng from both the origin and destination and via stations
-            const latLng: any = [];
-            latLng.push([newRoute.FromStation?.Longitude, newRoute.FromStation?.Latitude]);
-            newRoute.ViaStations?.forEach((station) => {
-                latLng.push([station.Longitude, station.Latitude]);
-            });
-            latLng.push([newRoute.ToStation?.Longitude, newRoute.ToStation?.Latitude]);
-
-            drawGeoJsonLine(latLng);
+            drawGeoJsonLine(newRoute);
             drawGeoJsonPoints(newRoute);
         }
     }
@@ -88,7 +79,21 @@ const trainMarkers = ref(new Map<string, Libre.Marker>());
 const mapContainer = shallowRef<string | HTMLElement | null>(null);
 const map = shallowRef<Raw<Libre.Map> | null>(null);
 
-const drawGeoJsonLine = (latLng: []) => {
+const drawGeoJsonLine = (route: TrainRoute) => {
+    // loop thorugh the route object and extract the lat and lng from both the origin and destination and via stations
+    const latLng: any = [];
+    if (route.FromStation !== null && route.FromStation !== undefined) {
+        latLng.push([route.FromStation.Longitude, route.FromStation.Latitude]);
+    }
+
+    route.ViaStations?.forEach((station) => {
+        latLng.push([station.Longitude, station.Latitude]);
+    });
+
+    if (route.ToStation !== null && route.ToStation !== undefined) {
+        latLng.push([route.ToStation.Longitude, route.ToStation.Latitude]);
+    }
+
     map.value?.addSource("route", {
         type: "geojson",
         data: {
@@ -119,14 +124,16 @@ const drawGeoJsonPoints = (route: TrainRoute) => {
     const features = [];
     // for each station in the route, create a feature
 
-    features.push({
-        type: "Feature",
-        geometry: {
-            type: "Point",
-            coordinates: [route.FromStation?.Longitude, route.FromStation?.Latitude]
-        },
-        properties: { name: route.FromStation?.AdvertisedLocationName }
-    });
+    if (route.FromStation !== null && route.FromStation !== undefined) {
+        features.push({
+            type: "Feature",
+            geometry: {
+                type: "Point",
+                coordinates: [route.FromStation?.Longitude, route.FromStation?.Latitude]
+            },
+            properties: { name: route.FromStation?.AdvertisedLocationName }
+        });
+    }
 
     route.ViaStations?.forEach((station) => {
         features.push({
@@ -139,14 +146,16 @@ const drawGeoJsonPoints = (route: TrainRoute) => {
         });
     });
 
-    features.push({
-        type: "Feature",
-        geometry: {
-            type: "Point",
-            coordinates: [route.ToStation?.Longitude, route.ToStation?.Latitude]
-        },
-        properties: { name: route.ToStation?.AdvertisedLocationName }
-    });
+    if (route.ToStation !== null && route.ToStation !== undefined) {
+        features.push({
+            type: "Feature",
+            geometry: {
+                type: "Point",
+                coordinates: [route.ToStation?.Longitude, route.ToStation?.Latitude]
+            },
+            properties: { name: route.ToStation?.AdvertisedLocationName }
+        });
+    }
 
     map.value?.addSource("stations", {
         type: "geojson",
