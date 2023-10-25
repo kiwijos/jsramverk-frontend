@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import DelayedComponent from "../components/DelayedComponent.vue";
+import DelayedComponent from "../../components/DelayedComponent.vue";
 import { mount } from "@vue/test-utils";
 
 test.skip("DelayedComponent", async () => {
