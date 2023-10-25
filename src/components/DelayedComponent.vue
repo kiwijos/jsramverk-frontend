@@ -237,7 +237,7 @@ onMounted(async () => {
         v-model:expandedRows="expandedRows"
         :value="delayedTrains"
         dataKey="OperationalTrainNumber"
-        tableStyle="min-width: 40rem"
+        tableStyle="min-width: 40rem;"
         class="w-5 table-float"
         paginator
         :rows="10"
@@ -489,5 +489,13 @@ onMounted(async () => {
     height: calc(100vh - 95px);
     overflow: scroll;
     opacity: 0.9;
+    min-height: calc(100vh - 95px);
+}
+</style>
+
+<style>
+.p-datatable-wrapper {
+    min-height: calc(100vh - 257px);
+    background-color: white;
 }
 </style>
