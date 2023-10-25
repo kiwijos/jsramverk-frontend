@@ -11,7 +11,7 @@ const items = ref([
     {
         label: "Försenade tåg",
         icon: "pi pi-fw pi-stopwatch",
-        route: "/delayed"
+        route: "/"
     },
     {
         label: "Ärenden",
