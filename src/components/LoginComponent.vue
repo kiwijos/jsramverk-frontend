@@ -1,6 +1,6 @@
 <template>
     <div class="flex align-items-center gap-5">
-        <img src="../assets/logo.jpg" height="300" width="300" />
+        <img src="../assets/logo.png" height="300" width="300" />
         <div class="divider-height">
             <Divider :layout="'vertical'" />
         </div>
