@@ -506,3 +506,8 @@ const tableVisible = ref(true);
     transition: transform 0.3s ease-in-out;
 }
 </style>
+<style>
+.p-datatable-wrapper {
+    background: white;
+}
+</style>
