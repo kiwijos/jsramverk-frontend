@@ -229,15 +229,22 @@ onMounted(async () => {
 
     addLoading.value = false;
 });
+
+const tableVisible = ref(true);
 </script>
 
 <template>
+    <Button
+        icon="pi pi-arrow-right"
+        class="fixed bg-white text-color z-5 m-3"
+        :class="{ hidden: tableVisible }"
+        @click="tableVisible = true"
+    ></Button>
     <DataTable
         v-model:expandedRows="expandedRows"
         :value="delayedTrains"
         dataKey="OperationalTrainNumber"
-        tableStyle="min-width: 40rem;"
-        class="w-5 table-float"
+        class="sm:w-full md:w-9 lg:w-7 xl:w-6 table-float"
         paginator
         :rows="10"
         :rowsPerPageOptions="[5, 10, 25]"
@@ -245,22 +252,29 @@ onMounted(async () => {
         :stripedRows="true"
         v-model:filters="filters"
         filterDisplay="row"
+        scrollable
+        scrollHeight="flex"
+        :class="{ '-translate-x-100': !tableVisible }"
     >
         <template #loading><ProgressSpinner animationDuration=".5s" /></template>
         <template #header>
-            <div class="flex flex-wrap justify-content-end flex gap-2">
-                <Button text icon="pi pi-plus" label="Öppna Alla" @click="expandAll"></Button>
-                <Button text icon="pi pi-minus" label="Stäng Alla" @click="collapseAll"></Button>
+            <div class="flex justify-content-between">
+                <Button icon="pi pi-arrow-left" @click="tableVisible = false"></Button>
+                <div class="flex flex-wrap justify-content-end flex gap-2">
+                    <Button text icon="pi pi-plus" label="Öppna Alla" @click="expandAll"></Button>
+                    <Button
+                        text
+                        icon="pi pi-minus"
+                        label="Stäng Alla"
+                        @click="collapseAll"
+                    ></Button>
+                </div>
             </div>
-            <h5 class="font-italic">
-                * Betyder att tiden är uppskattad. Om tåget har anlänt visas den faktiska tiden
-                istället.
-            </h5>
         </template>
-        <Column expander style="width: 5rem" />
+        <Column expander style="width: min-w-min" />
         <Column
             field="OperationalTrainNumber"
-            header="Tåg"
+            header="Tågnummer"
             :filterMatchModeOptions="matchModeOptions"
         >
             <template #body="{ data }">
@@ -428,6 +442,7 @@ onMounted(async () => {
                         </template>
                     </Column>
                 </DataTable>
+                <h5 class="font-italic">* Betyder att tiden är uppskattad.</h5>
             </div>
         </template>
     </DataTable>
@@ -486,9 +501,9 @@ onMounted(async () => {
     position: fixed;
     z-index: 10;
     height: calc(100vh - 95px);
-    overflow: scroll;
-    opacity: 0.9;
     min-height: calc(100vh - 95px);
+    transform: translateX(0%);
+    transition: transform 0.3s ease-in-out;
 }
 </style>
 
