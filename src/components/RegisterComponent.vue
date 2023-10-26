@@ -31,7 +31,7 @@ async function register() {
 
 <template>
     <div class="flex gap-5 align-items-center">
-        <img src="../assets/logo.jpg" alt="logo" height="300" width="300" />
+        <img src="../assets/logo.png" alt="logo" height="300" width="300" />
         <div class="height">
             <Divider layout="vertical" />
         </div>
