@@ -13,7 +13,6 @@ import type { TrainStation } from "@/models/TrainStation.model";
 import type { TrainDelayWithStationDto } from "@/models/TrainDelayWithStationDto.model";
 import type { TrainDelayGroup } from "@/models/TrainDelayGroup.model";
 import type { TrainRoute } from "@/models/TrainRoute.model";
-import { time } from "console";
 
 const toast = useToast();
 
