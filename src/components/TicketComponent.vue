@@ -97,6 +97,7 @@ const onRowUnselect = (event: TicketEvent): void => {
             @row-select="onRowSelect"
             @row-unselect="onRowUnselect"
         >
+            <template #loading><ProgressSpinner animationDuration=".5s" /></template>
             <Column field="code" header="Kod" sortable style="width: 30%"></Column>
             <Column field="trainnumber" header="Tågnummer" sortable style="width: 35%"></Column>
             <Column field="traindate" header="Datum" sortable style="width: 35%">
@@ -120,6 +121,9 @@ const onRowUnselect = (event: TicketEvent): void => {
                 :ticketCodes="ticketCodes"
                 :locked="ticketLockedByOther"
             />
+        </div>
+        <div v-else class="flex justify-content-center align-items-center w-full">
+            <h4 class="font-italic">Välj ett ärende</h4>
         </div>
     </div>
 </template>
